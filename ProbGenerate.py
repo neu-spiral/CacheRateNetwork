@@ -42,13 +42,13 @@ class Problem:
         self.weights = weights
 
     def pickle_cls(self, fname):
-        f = open(fname, 'w')
+        f = open(fname, 'wb')
         pickle.dump(self, f)
         f.close()
 
     @staticmethod
     def unpickle_cls(fname):
-        with open(fname, 'r') as f:
+        with open(fname, 'rb') as f:
             return pickle.load(f)
 
 
@@ -66,7 +66,7 @@ def main():
     parser.add_argument('--max_weight', default=100.0, type=float, help='Maximum edge weight')
     parser.add_argument('--min_weight', default=1.0, type=float, help='Minimum edge weight')
     parser.add_argument('--rate', default=1.0, type=float, help='Average rate per demand')
-    parser.add_argument('--max_paths', default=40, type=int, help='Maximum number of paths per demand')
+    parser.add_argument('--max_paths', default=5, type=int, help='Maximum number of paths per demand')
     parser.add_argument('--path_stretch', default=4.0, type=float, help='Allowed stretch from shortest path')
     parser.add_argument('--catalog_size', default=100, type=int, help='Catalog size')
     #   parser.add_argument('--sources_per_item',default=1,type=int, help='Number of designated sources per catalog item')
@@ -75,7 +75,7 @@ def main():
                         choices=['powerlaw', 'uniform'])
     parser.add_argument('--powerlaw_exp', default=1.2, type=float,
                         help='Power law exponent, used in demand distribution')
-    parser.add_argument('--query_nodes', default=100, type=int, help='Number of nodes generating queries')
+    parser.add_argument('--query_nodes', default=10, type=int, help='Number of nodes generating queries')
     parser.add_argument('--graph_type', default="erdos_renyi", type=str, help='Graph type',
                         choices=['erdos_renyi', 'balanced_tree', 'hypercube', "cicular_ladder", "cycle", "grid_2d",
                                  'lollipop', 'expander', 'star', 'barabasi_albert', 'watts_strogatz',
@@ -86,7 +86,7 @@ def main():
                         help='Degree. Used by balanced_tree, regular, barabasi_albert, watts_strogatz')
     parser.add_argument('--graph_p', default=0.10, type=int, help='Probability, used in erdos_renyi, watts_strogatz')
     parser.add_argument('--random_seed', default=1234567890, type=int, help='Random seed')
-    parser.add_argument('--debug_level', default='INFO', type=str, help='Debug Level',
+    parser.add_argument('--debug_level', default='DEBUG', type=str, help='Debug Level',
                         choices=['INFO', 'DEBUG', 'WARNING', 'ERROR'])
     #   parser.add_argument('--cache_keyword_parameters',default='{}',type=str,help='Networked Cache additional constructor parameters')
 
@@ -101,7 +101,7 @@ def main():
     dir = "INPUT/"
     if not os.path.exists(dir):
         os.mkdir(dir)
-    out = dir + args.outputfile + "%s_%ditems_%dnodes_%dquerynodes_%ddemands_%dcapcity_%dbandwidth" % (
+    out = dir + args.outputfile + "_%s_%ditems_%dnodes_%dquerynodes_%ddemands_%dcapcity_%dbandwidth" % (
     args.graph_type, args.catalog_size, args.graph_size, args.query_nodes, args.demand_size, args.max_capacity, args.max_bandwidth)
 
     def graphGenerator():
@@ -179,7 +179,7 @@ def main():
     construct_stats['edge_size'] = edge_size
 
     logging.info('Generating item sources...')
-    item_sources = dict((item, [G.nodes()[source]]) for item, source in
+    item_sources = dict((item, [list(G.nodes())[source]]) for item, source in
                         zip(range(args.catalog_size), np.random.choice(range(graph_size), args.catalog_size)))
     logging.info('...done. Generated %d sources' % len(item_sources))
     logging.debug('Generated sources:')
@@ -189,7 +189,7 @@ def main():
     construct_stats['sources'] = len(item_sources)
 
     logging.info('Generating query node list...')
-    query_node_list = [G.nodes()[i] for i in random.sample(range(graph_size), args.query_nodes)]
+    query_node_list = [list(G.nodes())[i] for i in random.sample(range(graph_size), args.query_nodes)]
     logging.info('...done. Generated %d query nodes.' % len(query_node_list))
 
     construct_stats['query_nodes'] = len(query_node_list)
