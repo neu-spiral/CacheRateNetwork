@@ -59,10 +59,10 @@ def main():
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     # parser.add_argument('inputfile',help = 'Training data. This should be a tab separated file of the form: index _tab_ features _tab_ output , where index is a number, features is a json string storing the features, and output is a json string storing output (binary) variables. See data/LR-example.txt for an example.')
     parser.add_argument('outputfile', help='Output file')
-    parser.add_argument('--max_capacity', default=2, type=int, help='Maximum capacity per cache')
-    parser.add_argument('--min_capacity', default=2, type=int, help='Minimum capacity per cache')
-    parser.add_argument('--max_bandwidth', default=10, type=int, help='Maximum bandwidth per edge')
-    parser.add_argument('--min_bandwidth', default=10, type=int, help='Minimum bandwidth per edge')
+    parser.add_argument('--max_capacity', default=1, type=int, help='Maximum capacity per cache')
+    parser.add_argument('--min_capacity', default=0, type=int, help='Minimum capacity per cache')
+    parser.add_argument('--max_bandwidth', default=5, type=int, help='Maximum bandwidth per edge')
+    parser.add_argument('--min_bandwidth', default=5, type=int, help='Minimum bandwidth per edge')
     parser.add_argument('--max_weight', default=100.0, type=float, help='Maximum edge weight')
     parser.add_argument('--min_weight', default=1.0, type=float, help='Minimum edge weight')
     parser.add_argument('--rate', default=1.0, type=float, help='Average rate per demand')
@@ -240,7 +240,7 @@ def main():
     logging.info('...done. Generated %d bandwidths' % len(bandwidths))
     logging.debug('Generated bandwidth:')
     for key in bandwidths:
-        logging.debug(pp([bandwidths, ':', bandwidths[key]]))
+        logging.debug(pp([key, ':', bandwidths[key]]))
 
     logging.info('Building CacheRouteNetwork')
 

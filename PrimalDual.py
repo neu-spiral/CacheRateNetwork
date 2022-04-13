@@ -19,18 +19,18 @@ class PrimalDual:
         self.FW = FrankWolfe(P)
 
     def DualStep(self, X, R, stepsize):
+        # calculate flow over each edge
         flow = {}
         for d in R:
             item = self.demands[d].item
             rate = self.demands[d].rate
             paths = self.demands[d].routing_info['paths']
 
-            x = self.demands[d].query_source
 
             for path_id in R[d]:
                 path = paths[path_id]
                 prob = R[d][path_id]
-
+                x = self.demands[d].query_source
                 s = succFun(x, path)
                 prodsofar = (1 - prob) * (1 - X[x][item])
 
@@ -44,7 +44,10 @@ class PrimalDual:
                     prodsofar *= (1 - X[x][item])
 
         for e in flow:
-            self.Dual[e] += stepsize * flow[e]
+            self.Dual[e] += stepsize * (flow[e] - self.bandwidths[e])
+            # print(flow[e], self.bandwidths[e])
+            if self.Dual[e] < 0:
+                self.Dual[e] = 0
 
     def alg(self, iterations):
 
@@ -53,7 +56,7 @@ class PrimalDual:
             self.DualStep(X, R, 1/(i+1))
 
             obj = self.FW.obj(X, R, self.Dual)
-            print(i, obj)
+            print(i, self.Dual, obj)
 
 
 if __name__ == '__main__':
@@ -70,8 +73,8 @@ if __name__ == '__main__':
     parser.add_argument('--graph_size', default=100, type=int, help='Network size')
     parser.add_argument('--query_nodes', default=10, type=int, help='Number of nodes generating queries')
     parser.add_argument('--demand_size', default=1000, type=int, help='Demand size')
-    parser.add_argument('--max_capacity', default=2, type=int, help='Maximum capacity per cache')
-    parser.add_argument('--max_bandwidth', default=10, type=int, help='Maximum bandwidth per edge')
+    parser.add_argument('--max_capacity', default=1, type=int, help='Maximum capacity per cache')
+    parser.add_argument('--max_bandwidth', default=5, type=int, help='Maximum bandwidth per edge')
     parser.add_argument('--debug_level', default='INFO', type=str, help='Debug Level',
                         choices=['INFO', 'DEBUG', 'WARNING', 'ERROR'])
     parser.add_argument('--iterations', default=100, type=int, help='Catalog size')

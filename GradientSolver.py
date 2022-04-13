@@ -47,12 +47,10 @@ class GradientSolver:
             sumrate += rate
             paths = self.demands[d].routing_info['paths']
 
-            x = self.demands[d].query_source
-
             for path_id in R[d]:
                 path = paths[path_id]
                 prob = R[d][path_id]
-
+                x = self.demands[d].query_source
                 s = succFun(x, path)
                 prodsofar = (1 - prob) * (1 - X[x][item])
                 while s is not None:
@@ -62,18 +60,17 @@ class GradientSolver:
                     s = succFun(x, path)
                     prodsofar *= (1 - X[x][item])
 
+        # calculate flow over each edge
         flow = {}
         for d in R:
             item = self.demands[d].item
             rate = self.demands[d].rate
             paths = self.demands[d].routing_info['paths']
 
-            x = self.demands[d].query_source
-
             for path_id in R[d]:
                 path = paths[path_id]
                 prob = R[d][path_id]
-
+                x = self.demands[d].query_source
                 s = succFun(x, path)
                 prodsofar = (1 - prob) * (1 - X[x][item])
 
@@ -277,7 +274,7 @@ class FrankWolfe(GradientSolver):
                 obj += DR[d][p] * ZR[d][p]
 
         problem = cp.Problem(cp.Maximize(obj), constr)
-        problem.solve(solver=cp.MOSEK)
+        problem.solve()
         # print("status:", problem.status)
 
         for v in self.graph.nodes():
@@ -307,7 +304,7 @@ class FrankWolfe(GradientSolver):
             ZX, ZR = self.gradient(X, R, Dual)
             DX, DR = self.find_max(ZX, ZR)
             self.adapt(X, R, DX, DR, gamma)
-            # print(t)
+            # print(self.obj(X, R, Dual))
 
         return X, R
 
