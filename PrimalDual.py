@@ -1,6 +1,9 @@
 from ProbGenerate import Problem, Demand
 from GradientSolver import FrankWolfe, succFun
+from helpers import succFun
 import logging, argparse
+import pickle
+import os
 
 class PrimalDual:
     """
@@ -50,13 +53,18 @@ class PrimalDual:
                 self.Dual[e] = 0
 
     def alg(self, iterations):
-
+        stepsize = 50
+        result = []
         for i in range(iterations):
             X, R = self.FW.alg(iterations=100, Dual=self.Dual)
-            self.DualStep(X, R, 1/(i+1))
+            if iterations % 50 == 49:
+                stepsize = stepsize / 2
+            self.DualStep(X, R, stepsize)
 
             obj = self.FW.obj(X, R, self.Dual)
             print(i, self.Dual, obj)
+            result.append((i, self.Dual, obj))
+        return result
 
 
 if __name__ == '__main__':
@@ -74,23 +82,32 @@ if __name__ == '__main__':
     parser.add_argument('--query_nodes', default=10, type=int, help='Number of nodes generating queries')
     parser.add_argument('--demand_size', default=1000, type=int, help='Demand size')
     parser.add_argument('--max_capacity', default=1, type=int, help='Maximum capacity per cache')
-    parser.add_argument('--max_bandwidth', default=5, type=int, help='Maximum bandwidth per edge')
+    parser.add_argument('--bandwidth_coefficient', default=0.7, type=float,
+                        help='Coefficient of bandwidth for max flow, this coefficient should be between (1/max_paths, 1)')
     parser.add_argument('--debug_level', default='INFO', type=str, help='Debug Level',
                         choices=['INFO', 'DEBUG', 'WARNING', 'ERROR'])
-    parser.add_argument('--iterations', default=100, type=int, help='Catalog size')
+    parser.add_argument('--iterations', default=100, type=int, help='Iterations')
 
     args = parser.parse_args()
 
     args.debug_level = eval("logging." + args.debug_level)
     logging.basicConfig(level=args.debug_level)
     dir = "INPUT/"
-    input = dir + args.inputfile + "_%s_%ditems_%dnodes_%dquerynodes_%ddemands_%dcapcity_%dbandwidth" % (
+    input = dir + args.inputfile + "_%s_%ditems_%dnodes_%dquerynodes_%ddemands_%dcapcity_%fbandwidth" % (
         args.graph_type, args.catalog_size, args.graph_size, args.query_nodes, args.demand_size,
-        args.max_capacity,
-        args.max_bandwidth)
+        args.max_capacity, args.bandwidth_coefficient)
     P = Problem.unpickle_cls(input)
     logging.info('Read data from ' + input)
     PD = PrimalDual(P)
-    PD.alg(args.iterations)
+    result = PD.alg(args.iterations)
+    dir = "OUTPUT2/"
+    if not os.path.exists(dir):
+        os.mkdir(dir)
+    fname = dir + "_%s_%ditems_%dnodes_%dquerynodes_%ddemands_%dcapcity_%fbandwidth" % (
+    args.graph_type, args.catalog_size, args.graph_size, args.query_nodes, args.demand_size, args.max_capacity, args.bandwidth_coefficient)
+
+    logging.info('Save in ' + fname)
+    with open(fname, 'wb') as f:
+        pickle.dump(result, f)
 
 

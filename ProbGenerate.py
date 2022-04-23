@@ -2,7 +2,8 @@ import logging, argparse
 import networkx
 import random
 import numpy as np
-from helpers import pp, generatePaths
+from helpers import pp, generatePaths, succFun
+
 import topologies
 import pickle
 import os
@@ -61,8 +62,8 @@ def main():
     parser.add_argument('outputfile', help='Output file')
     parser.add_argument('--max_capacity', default=1, type=int, help='Maximum capacity per cache')
     parser.add_argument('--min_capacity', default=0, type=int, help='Minimum capacity per cache')
-    parser.add_argument('--max_bandwidth', default=5, type=int, help='Maximum bandwidth per edge')
-    parser.add_argument('--min_bandwidth', default=5, type=int, help='Minimum bandwidth per edge')
+    parser.add_argument('--bandwidth_coefficient', default=0.7, type=float,
+                        help='Coefficient of bandwidth for max flow, this coefficient should be between (1/max_paths, 1)')
     parser.add_argument('--max_weight', default=100.0, type=float, help='Maximum edge weight')
     parser.add_argument('--min_weight', default=1.0, type=float, help='Minimum edge weight')
     parser.add_argument('--rate', default=1.0, type=float, help='Average rate per demand')
@@ -101,8 +102,8 @@ def main():
     dir = "INPUT/"
     if not os.path.exists(dir):
         os.mkdir(dir)
-    out = dir + args.outputfile + "_%s_%ditems_%dnodes_%dquerynodes_%ddemands_%dcapcity_%dbandwidth" % (
-    args.graph_type, args.catalog_size, args.graph_size, args.query_nodes, args.demand_size, args.max_capacity, args.max_bandwidth)
+    out = dir + args.outputfile + "_%s_%ditems_%dnodes_%dquerynodes_%ddemands_%dcapcity_%fbandwidth" % (
+    args.graph_type, args.catalog_size, args.graph_size, args.query_nodes, args.demand_size, args.max_capacity, args.bandwidth_coefficient)
 
     def graphGenerator():
         if args.graph_type == "erdos_renyi":
@@ -236,7 +237,25 @@ def main():
         logging.debug(pp([key, ':', capacities[key]]))
 
     logging.info('Generating bandwidth...')
-    bandwidths = dict((x, random.uniform(args.min_bandwidth, args.max_bandwidth)) for x in G.edges())
+    # bandwidths = dict((x, random.uniform(args.min_bandwidth, args.max_bandwidth)) for x in G.edges())
+    bandwidths = {}
+    for d in demands:
+        rate = d.rate
+        paths = d.routing_info['paths']
+
+        for path_id in paths:
+            path = paths[path_id]
+            x = d.query_source
+            s = succFun(x, path)
+
+            while s is not None:
+                if (s, x) in bandwidths:
+                    bandwidths[(s, x)] += args.bandwidth_coefficient * rate
+                else:
+                    bandwidths[(s, x)] = args.bandwidth_coefficient * rate
+                x = s
+                s = succFun(x, path)
+
     logging.info('...done. Generated %d bandwidths' % len(bandwidths))
     logging.debug('Generated bandwidth:')
     for key in bandwidths:
@@ -247,7 +266,9 @@ def main():
     pr = Problem(G, capacities, bandwidths, demands, weights)  # pack the graph, capacity for each node, attributes of each demands(requests), bandwidth for each edge
 
     pr.pickle_cls(out) # can only pickle functions defined at the top level of a module
+    logging.info('Save data to ' + out)
     logging.info('...done')
+
 
 if __name__ == "__main__":
     main()

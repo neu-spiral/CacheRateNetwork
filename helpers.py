@@ -159,6 +159,29 @@ def generatePaths(G, source, destination, cutoff=20, stretch=1.2):
                 in_paths += [new_path]
     return out_paths, path_distances
 
+def succFun(node, path):
+    """ The successor of a node in the path.
+    """
+    if node not in path:
+        return None
+    i = path.index(node)
+    if i + 1 == len(path):
+        return None
+    else:
+        return path[i + 1]
+
+
+def predFun(node, path):
+    """The predecessor of a node in the path.
+    """
+    if node not in path:
+        return None
+    i = path.index(node)
+    if i - 1 < 0:
+        return None
+    else:
+        return path[i - 1]
+
 
 if __name__ == "__main__":
     G = grid_2d_graph(50, 50)
