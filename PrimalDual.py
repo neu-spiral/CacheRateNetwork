@@ -1,9 +1,11 @@
 from ProbGenerate import Problem, Demand
-from GradientSolver import FrankWolfe, succFun
+from GradientSolver import FrankWolfe
 from helpers import succFun
 import logging, argparse
 import pickle
 import os
+import copy
+import numpy as np
 
 class PrimalDual:
     """
@@ -14,16 +16,31 @@ class PrimalDual:
         self.graph = P.graph
         self.demands = P.demands
         self.bandwidths = P.bandwidths
+        self.catalog_size = max([d.item for d in self.demands]) + 1
 
         self.Dual = {}
+        self.Dual_old = {}  # dual variable at the last iteration
         for e in self.graph.edges():
             self.Dual[e] = 0
+            self.Dual_old[e] = self.Dual[e]
+
+        self.X = {}
+        for v in self.graph.nodes():
+            self.X[v] = {}
+            for i in range(self.catalog_size):
+                self.X[v][i] = 0
+        self.R = {}
+        for d in range(len(self.demands)):
+            self.R[d] = {}
+            for p in self.demands[d].routing_info['paths']:
+                self.R[d][p] = 0
 
         self.FW = FrankWolfe(P)
 
     def DualStep(self, X, R, stepsize):
         # calculate flow over each edge
         flow = {}
+        overflow = {}
         for d in R:
             item = self.demands[d].item
             rate = self.demands[d].rate
@@ -47,23 +64,77 @@ class PrimalDual:
                     prodsofar *= (1 - X[x][item])
 
         for e in flow:
-            self.Dual[e] += stepsize * (flow[e] - self.bandwidths[e])
+            overflow[e] = flow[e] - self.bandwidths[e]
+            # if overflow[e] < 0:
+            #     overflow[e] = 0
+            # self.Dual[e] += stepsize * overflow[e]
+            self.Dual[e] += stepsize * overflow[e]
             # print(flow[e], self.bandwidths[e])
             if self.Dual[e] < 0:
                 self.Dual[e] = 0
+            overflow[e] /= self.bandwidths[e]
+        return overflow
 
-    def alg(self, iterations):
-        stepsize = 50
+    def DualStep_momentum(self, X, R, stepsize):
+        # calculate flow over each edge
+        momentum = 0.85
+        flow = {}
+        overflow = {}
+        for d in R:
+            item = self.demands[d].item
+            rate = self.demands[d].rate
+            paths = self.demands[d].routing_info['paths']
+
+
+            for path_id in R[d]:
+                path = paths[path_id]
+                prob = R[d][path_id]
+                x = self.demands[d].query_source
+                s = succFun(x, path)
+                prodsofar = (1 - prob) * (1 - X[x][item])
+
+                while s is not None:
+                    if (s, x) in flow:
+                        flow[(s, x)] += prodsofar * rate
+                    else:
+                        flow[(s, x)] = prodsofar * rate
+                    x = s
+                    s = succFun(x, path)
+                    prodsofar *= (1 - X[x][item])
+
+        for e in flow:
+            overflow[e] = flow[e] - self.bandwidths[e]
+            # if overflow[e] < 0:
+            #     overflow[e] = 0
+            # self.Dual[e] += stepsize * overflow[e]
+            temp_Dual = self.Dual[e] + stepsize * overflow[e] + momentum * (self.Dual[e] - self.Dual_old[e])
+            if temp_Dual < 0:
+                temp_Dual = 0
+            self.Dual_old[e], self.Dual[e] = self.Dual[e], temp_Dual
+            overflow[e] /= self.bandwidths[e]
+        return overflow
+
+    def adapt(self, X_new, X_old, smooth):
+        for v in X_new:
+            for i in X_new[v]:
+                X_new[v][i] = smooth * X_new[v][i] + (1 - smooth) * X_old[v][i]
+                X_old[v][i] = X_new[v][i]
+
+    def alg(self, iterations, stepsize):
         result = []
         for i in range(iterations):
             X, R = self.FW.alg(iterations=100, Dual=self.Dual)
-            if iterations % 50 == 49:
-                stepsize = stepsize / 2
-            self.DualStep(X, R, stepsize)
 
-            obj = self.FW.obj(X, R, self.Dual)
-            print(i, self.Dual, obj)
-            result.append((i, self.Dual, obj))
+            # smooth result
+            smooth = 2 / (i + 2)
+            self.adapt(X, self.X, smooth)
+            self.adapt(R, self.R, smooth)
+
+            overflow = self.DualStep_momentum(X, R, stepsize / (i+1)**0.5)
+
+            lagrangian, obj = self.FW.obj(X, R, self.Dual)
+            print(i, self.Dual, lagrangian)
+            result.append((i, X, R, overflow, copy.deepcopy(self.Dual), lagrangian, obj))
         return result
 
 
@@ -87,6 +158,8 @@ if __name__ == '__main__':
     parser.add_argument('--debug_level', default='INFO', type=str, help='Debug Level',
                         choices=['INFO', 'DEBUG', 'WARNING', 'ERROR'])
     parser.add_argument('--iterations', default=100, type=int, help='Iterations')
+    parser.add_argument('--stepsize', default=10, type=int, help='Stepsize')
+
 
     args = parser.parse_args()
 
@@ -99,12 +172,12 @@ if __name__ == '__main__':
     P = Problem.unpickle_cls(input)
     logging.info('Read data from ' + input)
     PD = PrimalDual(P)
-    result = PD.alg(args.iterations)
-    dir = "OUTPUT2/"
+    result = PD.alg(args.iterations, args.stepsize)
+    dir = "OUTPUT5/"
     if not os.path.exists(dir):
         os.mkdir(dir)
-    fname = dir + "_%s_%ditems_%dnodes_%dquerynodes_%ddemands_%dcapcity_%fbandwidth" % (
-    args.graph_type, args.catalog_size, args.graph_size, args.query_nodes, args.demand_size, args.max_capacity, args.bandwidth_coefficient)
+    fname = dir + "%s_%ditems_%dnodes_%dquerynodes_%ddemands_%dcapcity_%fbandwidth_%dstepsize" % (
+    args.graph_type, args.catalog_size, args.graph_size, args.query_nodes, args.demand_size, args.max_capacity, args.bandwidth_coefficient, args.stepsize)
 
     logging.info('Save in ' + fname)
     with open(fname, 'wb') as f:

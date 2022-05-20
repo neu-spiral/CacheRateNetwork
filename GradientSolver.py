@@ -41,7 +41,6 @@ class GradientSolver:
                     x = s
                     s = succFun(x, path)
 
-
     def obj(self, X, R, Dual):
         ecg = 0.0
         sumrate = 0.0
@@ -71,12 +70,12 @@ class GradientSolver:
                     s = succFun(x, path)
                     prodsofar *= (1 - X[x][item])
 
+        lagrangian = ecg
         for e in flow:
-            ecg -= Dual[e] * (flow[e] - self.bandwidths[e])
+            lagrangian -= Dual[e] * (flow[e] - self.bandwidths[e])
 
         # return ecg / sumrate
-        return ecg
-
+        return lagrangian, ecg
 
     def gradient_X(self, X, R, Dual):
 
@@ -161,7 +160,7 @@ class GradientSolver:
                 X1[v][i] = 1
                 X0 = copy.deepcopy(X)
                 X0[v][i] = 0
-                ZX[v][i] = self.obj(X1, R, Dual) - self.obj(X0, R, Dual)
+                ZX[v][i] = self.obj(X1, R, Dual)[0] - self.obj(X0, R, Dual)[0]
         ZR = {}
         for d in range(len(self.demands)):
             ZR[d] = {}
@@ -170,7 +169,7 @@ class GradientSolver:
                 R1[d][p] = 1
                 R0 = copy.deepcopy(R)
                 R0[d][p] = 0
-                ZR[d][p] = self.obj(X, R1, Dual) - self.obj(X, R0, Dual)
+                ZR[d][p] = self.obj(X, R1, Dual)[0] - self.obj(X, R0, Dual)[0]
         return ZX, ZR
 
     def adapt(self, X, R, ZX, ZR, step_size):
