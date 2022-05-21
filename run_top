@@ -1,0 +1,11 @@
+#! /bin/bash
+
+for bandwidth in 2 2.5 3 3.5 4
+do
+    for graph in grid_2d erdos_renyi hypercube star
+    do
+        sbatch ../script.sh ProbGenerate.py Prob --graph_type $graph --bandwidth_coefficient $bandwidth
+    done
+done
+
+#    geant abilene dtelekom
