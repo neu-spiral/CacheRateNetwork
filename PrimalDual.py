@@ -3,7 +3,7 @@ from GradientSolver import FrankWolfe
 from helpers import succFun
 import logging, argparse
 import pickle
-import os
+import os, time
 import copy
 import numpy as np
 
@@ -120,17 +120,42 @@ class PrimalDual:
                 X_new[v][i] = smooth * X_new[v][i] + (1 - smooth) * X_old[v][i]
                 X_old[v][i] = X_new[v][i]
 
+    def Dependencies(self):
+        """
+        Generate a dictionary self.dependencies: key: (node, item), value: a list of (demand, path)
+        """
+        dependencies = {}
+        cost_e = {}
+        for d in range(len(self.demands)):
+            item = self.demands[d].item
+            paths = self.demands[d].routing_info['paths']
+            for p in self.demands[d].routing_info['paths']:
+                cost_e[(d,p)] = {}
+                path = paths[p]
+                x = self.demands[d].query_source
+                s = succFun(x, path)
+                while s is not None:
+                    if (x, item) not in dependencies:
+                        dependencies[(x, item)] = [(d,p)]
+                    else:
+                        dependencies[(x, item)].append((d,p))
+                    cost_e[(d,p)][(s,x)] = 0
+                    x = s
+                    s = succFun(x, path)
+        return dependencies, cost_e
+
     def alg(self, iterations, stepsize):
         result = []
+        dependencies, cost_e = self.Dependencies()
         for i in range(iterations):
-            X, R = self.FW.alg(iterations=100, Dual=self.Dual)
+            X, R = self.FW.alg(iterations=100, Dual=self.Dual, dependencies=dependencies, cost_e=cost_e)
 
             # smooth result
             smooth = 2 / (i + 2)
             self.adapt(X, self.X, smooth)
             self.adapt(R, self.R, smooth)
 
-            overflow = self.DualStep_momentum(X, R, stepsize / (i+1)**0.5)
+            overflow = self.DualStep(X, R, stepsize / (i+1)**0.5)
 
             lagrangian, obj = self.FW.obj(X, R, self.Dual)
             print(i, self.Dual, lagrangian)
@@ -152,13 +177,13 @@ if __name__ == '__main__':
     parser.add_argument('--graph_size', default=100, type=int, help='Network size')
     parser.add_argument('--query_nodes', default=10, type=int, help='Number of nodes generating queries')
     parser.add_argument('--demand_size', default=1000, type=int, help='Demand size')
-    parser.add_argument('--max_capacity', default=1, type=int, help='Maximum capacity per cache')
-    parser.add_argument('--bandwidth_coefficient', default=0.7, type=float,
-                        help='Coefficient of bandwidth for max flow, this coefficient should be between (1/max_paths, 1)')
+    parser.add_argument('--max_capacity', default=5, type=int, help='Maximum capacity per cache')
+    parser.add_argument('--bandwidth_coefficient', default=1.5, type=float,
+                        help='Coefficient of bandwidth for max flow, this coefficient should be between (1, max_paths)')
     parser.add_argument('--debug_level', default='INFO', type=str, help='Debug Level',
                         choices=['INFO', 'DEBUG', 'WARNING', 'ERROR'])
-    parser.add_argument('--iterations', default=100, type=int, help='Iterations')
-    parser.add_argument('--stepsize', default=10, type=int, help='Stepsize')
+    parser.add_argument('--iterations', default=1000, type=int, help='Iterations')
+    parser.add_argument('--stepsize', default=50, type=int, help='Stepsize')
 
 
     args = parser.parse_args()
@@ -173,7 +198,7 @@ if __name__ == '__main__':
     logging.info('Read data from ' + input)
     PD = PrimalDual(P)
     result = PD.alg(args.iterations, args.stepsize)
-    dir = "OUTPUT5/"
+    dir = "OUTPUT6/"
     if not os.path.exists(dir):
         os.mkdir(dir)
     fname = dir + "%s_%ditems_%dnodes_%dquerynodes_%ddemands_%dcapcity_%fbandwidth_%dstepsize" % (

@@ -60,10 +60,10 @@ def main():
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     # parser.add_argument('inputfile',help = 'Training data. This should be a tab separated file of the form: index _tab_ features _tab_ output , where index is a number, features is a json string storing the features, and output is a json string storing output (binary) variables. See data/LR-example.txt for an example.')
     parser.add_argument('outputfile', help='Output file')
-    parser.add_argument('--max_capacity', default=1, type=int, help='Maximum capacity per cache')
-    parser.add_argument('--min_capacity', default=0, type=int, help='Minimum capacity per cache')
-    parser.add_argument('--bandwidth_coefficient', default=0.7, type=float,
-                        help='Coefficient of bandwidth for max flow, this coefficient should be between (1/max_paths, 1)')
+    parser.add_argument('--max_capacity', default=5, type=int, help='Maximum capacity per cache')
+    parser.add_argument('--min_capacity', default=1, type=int, help='Minimum capacity per cache')
+    parser.add_argument('--bandwidth_coefficient', default=1.5, type=float,
+                        help='Coefficient of bandwidth for max flow, this coefficient should be between (1, max_paths)')
     parser.add_argument('--max_weight', default=100.0, type=float, help='Maximum edge weight')
     parser.add_argument('--min_weight', default=1.0, type=float, help='Minimum edge weight')
     parser.add_argument('--rate', default=1.0, type=float, help='Average rate per demand')
@@ -242,6 +242,7 @@ def main():
     for d in demands:
         rate = d.rate
         paths = d.routing_info['paths']
+        max_paths = len(paths)
 
         for path_id in paths:
             path = paths[path_id]
@@ -250,9 +251,9 @@ def main():
 
             while s is not None:
                 if (s, x) in bandwidths:
-                    bandwidths[(s, x)] += args.bandwidth_coefficient * rate
+                    bandwidths[(s, x)] += args.bandwidth_coefficient * rate / max_paths
                 else:
-                    bandwidths[(s, x)] = args.bandwidth_coefficient * rate
+                    bandwidths[(s, x)] = args.bandwidth_coefficient * rate / max_paths
                 x = s
                 s = succFun(x, path)
 

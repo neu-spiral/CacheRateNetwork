@@ -21,26 +21,6 @@ class GradientSolver:
             paths = self.demands[d].routing_info['paths']
             self.routing_capacities[d] = len(paths) - 1
 
-    def Dependencies(self):
-        '''
-        Generate a dictionary self.dependencies: key: (node, item), value: a list of (demand, path)
-        '''
-        self.dependencies = {}
-        for d in range(len(self.demands)):
-            item = self.demands[d].item
-            paths = self.demands[d].routing_info['paths']
-            for p in self.demands[d].routing_info['paths']:
-                path = paths[p]
-                x = self.demands[d].query_source
-                s = succFun(x, path)
-                while s is not None:
-                    if (x, item) not in self.dependencies:
-                        self.dependencies[(x, item)] = [(d,p)]
-                    else:
-                        self.dependencies[(x, item)].append((d,p))
-                    x = s
-                    s = succFun(x, path)
-
     def obj(self, X, R, Dual):
         ecg = 0.0
         sumrate = 0.0
@@ -77,7 +57,7 @@ class GradientSolver:
         # return ecg / sumrate
         return lagrangian, ecg
 
-    def gradient_X(self, X, R, Dual):
+    def gradient_X2(self, X, R, Dual, dependencies):
 
         # def delta_grad(X, R, Dual):
         ZX = {}
@@ -86,11 +66,11 @@ class GradientSolver:
             for i in range(self.catalog_size):
                 ZX[v][i] = 0
 
-        for (v, i) in self.dependencies:
-            X0 = copy.deepcopy(X)
-            X0[v][i] = 0
+        for (v, i) in dependencies:
+            temp = X[v][i]
+            X[v][i] = 0
 
-            for (d, p) in self.dependencies[(v, i)]:
+            for (d, p) in dependencies[(v, i)]:
                 item = self.demands[d].item
                 rate = self.demands[d].rate
                 paths = self.demands[d].routing_info['paths']
@@ -103,7 +83,7 @@ class GradientSolver:
 
                 # calculate cost and flow after node v
                 while x is not v:
-                    prodsofar *= (1 - X0[x][item])
+                    prodsofar *= (1 - X[x][item])
                     x = s
                     s = succFun(x, path)
 
@@ -114,11 +94,43 @@ class GradientSolver:
 
                     x = s
                     s = succFun(x, path)
-                    prodsofar *= (1 - X0[x][item])
+                    prodsofar *= (1 - X[x][item])
+
+            X[v][i] = temp
 
         return ZX
 
-    def gradient_R(self, X, R, Dual):
+    def gradient_X(self, X, R, Dual, dependencies, cost_e):
+
+        # def delta_grad(X, R, Dual):
+        ZX = {}
+        for v in self.graph.nodes():
+            ZX[v] = {}
+            for i in range(self.catalog_size):
+                ZX[v][i] = 0
+
+        for (v, i) in dependencies:
+            for (d, p) in dependencies[(v, i)]:
+                paths = self.demands[d].routing_info['paths']
+
+                path = paths[p]
+                prob = R[d][p]
+                x = v
+
+                # calculate cost and flow after node v
+
+                s = succFun(v, path)
+
+                while s is not None:
+                    # print((d,p), (s,x))
+                    ZX[v][i] += cost_e[(d,p)][(s,x)] / (1-X[v][i]) * (1 - prob)
+
+                    x = s
+                    s = succFun(x, path)
+
+        return ZX
+
+    def gradient_R(self, X, R, Dual, cost_e):
 
         ZR = {}
         for d in range(len(self.demands)):
@@ -126,25 +138,25 @@ class GradientSolver:
             for p in self.demands[d].routing_info['paths']:
                 ZR[d][p] = 0
 
-                R0 = copy.deepcopy(R)
-                R0[d][p] = 0
-
                 item = self.demands[d].item
                 rate = self.demands[d].rate
                 paths = self.demands[d].routing_info['paths']
 
                 path = paths[p]
-                prob = R0[d][p]
                 x = self.demands[d].query_source
                 s = succFun(x, path)
-                prodsofar = (1 - prob)
+                prodsofar = 1
 
                 while s is not None:
                     prodsofar *= (1 - X[x][item])
-                    ZR[d][p] += rate * self.weights[(s, x)] * prodsofar
+                    cost = rate * self.weights[(s, x)] * prodsofar
 
                     # calculate flow over each edge along path p
-                    ZR[d][p] += Dual[(s, x)] * prodsofar * rate
+                    flow = Dual[(s, x)] * prodsofar * rate
+
+                    ZR[d][p] = ZR[d][p] + cost + flow
+
+                    cost_e[(d, p)][(s, x)] = cost + flow
 
                     x = s
                     s = succFun(x, path)
@@ -273,7 +285,7 @@ class FrankWolfe(GradientSolver):
             D[row] = topK(items, capacities[row])
         return D
 
-    def alg(self, iterations, Dual):
+    def alg(self, iterations, Dual, dependencies, cost_e):
         X = {}
         for v in self.graph.nodes():
             X[v] = {}
@@ -286,8 +298,6 @@ class FrankWolfe(GradientSolver):
             for p in self.demands[d].routing_info['paths']:
                 R[d][p] = 0
 
-        self.Dependencies()
-
         gamma = 1. / iterations
 
         for t in range(iterations):
@@ -296,8 +306,8 @@ class FrankWolfe(GradientSolver):
             # DX, DR = self.find_max(ZX, ZR)
             # self.adapt(X, R, DX, DR, gamma)
 
-            ZX2 = self.gradient_X(X, R, Dual)
-            ZR2 = self.gradient_R(X, R, Dual)
+            ZR2 = self.gradient_R(X, R, Dual, cost_e)
+            ZX2 = self.gradient_X(X, R, Dual, dependencies, cost_e)
 
             DX2 = self.find_topK(ZX2, self.capacities)
             DR2 = self.find_topK(ZR2, self.routing_capacities)
@@ -324,9 +334,9 @@ if __name__ == "__main__":
     parser.add_argument('--graph_size', default=100, type=int, help='Network size')
     parser.add_argument('--query_nodes', default=10, type=int, help='Number of nodes generating queries')
     parser.add_argument('--demand_size', default=1000, type=int, help='Demand size')
-    parser.add_argument('--max_capacity', default=1, type=int, help='Maximum capacity per cache')
-    parser.add_argument('--bandwidth_coefficient', default=0.7, type=float,
-                        help='Coefficient of bandwidth for max flow, this coefficient should be between (1/max_paths, 1)')
+    parser.add_argument('--max_capacity', default=5, type=int, help='Maximum capacity per cache')
+    parser.add_argument('--bandwidth_coefficient', default=1.5, type=float,
+                        help='Coefficient of bandwidth for max flow, this coefficient should be between (1, max_paths)')
     parser.add_argument('--debug_level', default='INFO', type=str, help='Debug Level',
                         choices=['INFO', 'DEBUG', 'WARNING', 'ERROR'])
     parser.add_argument('--iterations', default=100, type=int, help='Iterations')
