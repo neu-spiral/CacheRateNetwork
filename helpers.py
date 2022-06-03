@@ -159,6 +159,7 @@ def generatePaths(G, source, destination, cutoff=20, stretch=1.2):
                 in_paths += [new_path]
     return out_paths, path_distances
 
+
 def succFun(node, path):
     """ The successor of a node in the path.
     """
@@ -181,6 +182,26 @@ def predFun(node, path):
         return None
     else:
         return path[i - 1]
+
+
+def Dependencies(demands):
+    """
+    Generate a dictionary dependencies: key: (node, item), value: a list of (demand, path)
+    """
+    dependencies = {}
+    for d in range(len(demands)):
+        item = demands[d].item
+        paths = demands[d].routing_info['paths']
+        for p in demands[d].routing_info['paths']:
+            path = paths[p]
+            x = demands[d].query_source
+            while x is not None:
+                if (x, item) not in dependencies:
+                    dependencies[(x, item)] = [(d,p)]
+                else:
+                    dependencies[(x, item)].append((d,p))
+                x = succFun(x, path)
+    return dependencies
 
 
 if __name__ == "__main__":

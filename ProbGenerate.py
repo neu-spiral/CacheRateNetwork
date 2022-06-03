@@ -62,7 +62,7 @@ def main():
     parser.add_argument('outputfile', help='Output file')
     parser.add_argument('--max_capacity', default=5, type=int, help='Maximum capacity per cache')
     parser.add_argument('--min_capacity', default=1, type=int, help='Minimum capacity per cache')
-    parser.add_argument('--bandwidth_coefficient', default=1.5, type=float,
+    parser.add_argument('--bandwidth_coefficient', default=1, type=float,
                         help='Coefficient of bandwidth for max flow, this coefficient should be between (1, max_paths)')
     parser.add_argument('--max_weight', default=100.0, type=float, help='Maximum edge weight')
     parser.add_argument('--min_weight', default=1.0, type=float, help='Minimum edge weight')
