@@ -1,0 +1,9 @@
+#! /bin/bash
+
+for bandwidth in 1 1.5 2
+do
+  for graph in grid_2d erdos_renyi hypercube star
+  do
+     sbatch ../script.sh Greedy.py Prob --graph_type $graph --bandwidth_coefficient $bandwidth
+  done
+done

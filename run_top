@@ -1,6 +1,6 @@
 #! /bin/bash
 
-for bandwidth in 2 2.5 3 3.5 4
+for bandwidth in 1 1.5
 do
     for graph in grid_2d erdos_renyi hypercube star
     do

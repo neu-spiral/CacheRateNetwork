@@ -1,11 +1,24 @@
 #! /bin/bash
 
-sbatch ../script.sh plotter.py --graph_type grid_2d --graph_size 20 --catalog_size 10 --demand_size 100 --query_nodes 2  --bandwidth_coefficient 0.7 --stepsize 10
+#sbatch ../script.sh plotter.py --graph_type grid_2d --graph_size 20 --catalog_size 10 --demand_size 100 --query_nodes 2  --bandwidth_coefficient 0.7 --stepsize 10
+#
+#sbatch ../script.sh plotter.py --graph_type grid_2d --graph_size 20 --catalog_size 10 --demand_size 100 --query_nodes 2  --bandwidth_coefficient 0.7 --stepsize 50
+#
+#sbatch ../script.sh plotter.py --graph_type grid_2d --graph_size 20 --catalog_size 10 --demand_size 100 --query_nodes 2  --bandwidth_coefficient 0.75 --stepsize 10
+#
+#sbatch ../script.sh plotter.py --graph_type grid_2d --graph_size 20 --catalog_size 10 --demand_size 100 --query_nodes 2  --bandwidth_coefficient 0.75 --stepsize 50
+#
+#sbatch ../script.sh plotter.py --graph_type grid_2d --graph_size 20 --catalog_size 10 --demand_size 100 --query_nodes 2  --bandwidth_coefficient 0.8 --stepsize 10
 
-sbatch ../script.sh plotter.py --graph_type grid_2d --graph_size 20 --catalog_size 10 --demand_size 100 --query_nodes 2  --bandwidth_coefficient 0.7 --stepsize 50
+for bandwidth in 1 1.5 2 2.5 3 3.5 4
+do
+  for graph in grid_2d erdos_renyi hypercube star
+  do
+    for stepsize in 10 50 100 500
+    do
+      sbatch ../script.sh plotter.py --graph_type $graph --bandwidth_coefficient $bandwidth --stepsize $stepsize
+    done
+  done
+done
 
-sbatch ../script.sh plotter.py --graph_type grid_2d --graph_size 20 --catalog_size 10 --demand_size 100 --query_nodes 2  --bandwidth_coefficient 0.75 --stepsize 10
-
-sbatch ../script.sh plotter.py --graph_type grid_2d --graph_size 20 --catalog_size 10 --demand_size 100 --query_nodes 2  --bandwidth_coefficient 0.75 --stepsize 50
-
-sbatch ../script.sh plotter.py --graph_type grid_2d --graph_size 20 --catalog_size 10 --demand_size 100 --query_nodes 2  --bandwidth_coefficient 0.8 --stepsize 10
+# --graph_type grid_2d --graph_size 20 --catalog_size 10 --demand_size 100 --query_nodes 2  --bandwidth_coefficient 0.7 --stepsize 10 --max_capacity 1
