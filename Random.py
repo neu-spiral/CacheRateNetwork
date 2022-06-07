@@ -46,10 +46,13 @@ class CacheRoute(Random):
         X = self.RandomCache(R, dependencies)
         R = self.OptimalRoute(X)
 
-        obj = self.obj(X, R)
-        print('CacheRoute', obj)
-
-        return (X, R, obj)
+        if R:
+            obj = self.obj(X, R)
+            print('CacheRoute', obj)
+            return (X, R, obj)
+        else:
+            print('CacheRoute: infeasible')
+            return (X, R, 0)
 
 
 class RouteCache(Random):
@@ -64,12 +67,15 @@ class RouteCache(Random):
         dependencies = Dependencies(self.demands)
 
         R = self.OptimalRoute(X)
-        X = self.RandomCache(R, dependencies)
+        if R:
+            X = self.RandomCache(R, dependencies)
 
-        obj = self.obj(X, R)
-        print('RouteCache', obj)
-
-        return (X, R, obj)
+            obj = self.obj(X, R)
+            print('RouteCache', obj)
+            return (X, R, obj)
+        else:
+            print('RouteCache: infeasible')
+            return (X, R, 0)
 
 
 if __name__ == '__main__':
@@ -81,7 +87,7 @@ if __name__ == '__main__':
                         choices=['erdos_renyi', 'balanced_tree', 'hypercube', "cicular_ladder", "cycle",
                                  "grid_2d", 'lollipop', 'expander', 'hypercube', 'star', 'barabasi_albert',
                                  'watts_strogatz', 'regular', 'powerlaw_tree', 'small_world', 'geant',
-                                 'abilene', 'dtelekom', 'servicenetwork'])
+                                 'abilene', 'dtelekom', 'servicenetwork', 'example1'])
     parser.add_argument('--catalog_size', default=100, type=int, help='Catalog size')
     parser.add_argument('--graph_size', default=100, type=int, help='Network size')
     parser.add_argument('--query_nodes', default=10, type=int, help='Number of nodes generating queries')

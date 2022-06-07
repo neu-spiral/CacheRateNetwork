@@ -468,3 +468,52 @@ def GEANT():
     G.add_edge("nodeJ", "nodeK")
     G.add_edge("nodeK", "nodeL")
     return G
+
+
+def example1():
+    G = Graph()
+
+    G.add_node("node1")
+    G.add_node("node2")
+    G.add_node("node3")
+    G.add_node("node4")
+    G.add_node("node5")
+    G.add_node("node6")
+    G.add_node("node7")
+
+    G.add_edge("node1", "node3")
+    G.add_edge("node3", "node4")
+    G.add_edge("node4", "node2")
+    G.add_edge("node2", "node5")
+    G.add_edge("node5", "node7")
+    G.add_edge("node7", "node4")
+    G.add_edge("node4", "node6")
+
+    return G
+
+
+def example1_weights(M):
+    weights = {("node1", "node3"): M, ("node3", "node4"): 1, ("node2", "node4"): M, ("node2", "node5"): M,
+               ("node5", "node7"): 1, ("node4", "node7"): 1, ("node4", "node6"): M}
+    return weights
+
+
+def example1_capacities():
+    capacities = {"node3": 1, "node4": 1, "node5": 1}
+    return capacities
+
+
+def example1_bandwidths(rate, epsilon, inf):
+    weights = {("node1", "node3"): inf, ("node3", "node4"): inf, ("node2", "node4"): epsilon,
+               ("node2", "node5"): inf, ("node5", "node7"): epsilon, ("node4", "node7"): 2*rate,
+               ("node4", "node6"): inf}
+    return weights
+
+
+def example1_demands():
+    """(item, query node): path dictionary"""
+    demands = {(0, "node6"): {0: ["node6", "node4", "node3", "node1"]},
+               (0, "node7"): {0: ["node7", "node4", "node3", "node1"]},
+               (1, "node7"): {0: ["node7", "node4", "node2"], 1: ["node7", "node5", "node2"]}
+               }
+    return demands

@@ -2,7 +2,7 @@ import logging, argparse
 import networkx
 import random
 import numpy as np
-from helpers import pp, generatePaths, succFun
+from helpers import pp, generatePaths, succFun, path_length
 
 import topologies
 import pickle
@@ -81,7 +81,7 @@ def main():
                         choices=['erdos_renyi', 'balanced_tree', 'hypercube', "cicular_ladder", "cycle", "grid_2d",
                                  'lollipop', 'expander', 'star', 'barabasi_albert', 'watts_strogatz',
                                  'regular', 'powerlaw_tree', 'small_world', 'geant', 'abilene', 'dtelekom',
-                                 'servicenetwork'])
+                                 'servicenetwork', 'example1'])
     parser.add_argument('--graph_size', default=100, type=int, help='Network size')
     parser.add_argument('--graph_degree', default=3, type=int,
                         help='Degree. Used by balanced_tree, regular, barabasi_albert, watts_strogatz')
@@ -150,6 +150,8 @@ def main():
             return topologies.Abilene()
         if args.graph_type == 'servicenetwork':
             return topologies.ServiceNetwork()
+        if args.graph_type == 'example1':
+            return topologies.example1()
 
     construct_stats = {}
 
@@ -164,14 +166,25 @@ def main():
     number_map = dict(zip(temp_graph.nodes(), range(len(temp_graph.nodes()))))
     G.add_nodes_from(number_map.values())
     weights = {}
-    for (x, y) in temp_graph.edges():
-        xx = number_map[x]
-        yy = number_map[y]
-        G.add_edges_from(((xx, yy), (yy, xx)))
-        weights[(xx, yy)] = random.uniform(args.min_weight, args.max_weight)
-        weights[(yy, xx)] = weights[(xx, yy)]
-        G[xx][yy]['weight'] = weights[(xx, yy)]
-        G[yy][xx]['weight'] = weights[(yy, xx)]
+    if args.graph_type == 'example1':
+        example1_weights = topologies.example1_weights(100)
+        for (x, y) in temp_graph.edges():
+            xx = number_map[x]
+            yy = number_map[y]
+            G.add_edges_from(((xx, yy), (yy, xx)))
+            weights[(xx, yy)] = example1_weights[(x, y)]
+            weights[(yy, xx)] = weights[(xx, yy)]
+            G[xx][yy]['weight'] = weights[(xx, yy)]
+            G[yy][xx]['weight'] = weights[(yy, xx)]
+    else:
+        for (x, y) in temp_graph.edges():
+            xx = number_map[x]
+            yy = number_map[y]
+            G.add_edges_from(((xx, yy), (yy, xx)))
+            weights[(xx, yy)] = random.uniform(args.min_weight, args.max_weight)
+            weights[(yy, xx)] = weights[(xx, yy)]
+            G[xx][yy]['weight'] = weights[(xx, yy)]
+            G[yy][xx]['weight'] = weights[(yy, xx)]
     graph_size = G.number_of_nodes()
     edge_size = G.number_of_edges()
     logging.info('...done. Created graph with %d nodes and %d edges' % (graph_size, edge_size))
@@ -180,8 +193,11 @@ def main():
     construct_stats['edge_size'] = edge_size
 
     logging.info('Generating item sources...')
-    item_sources = dict((item, [list(G.nodes())[source]]) for item, source in
-                        zip(range(args.catalog_size), np.random.choice(range(graph_size), args.catalog_size)))
+    if args.graph_type == 'example1':
+        item_sources = {0: [0], 1: [1]}
+    else:
+        item_sources = dict((item, [list(G.nodes())[source]]) for item, source in
+                            zip(range(args.catalog_size), np.random.choice(range(graph_size), args.catalog_size)))
     logging.info('...done. Generated %d sources' % len(item_sources))
     logging.debug('Generated sources:')
     for item in item_sources:
@@ -190,47 +206,75 @@ def main():
     construct_stats['sources'] = len(item_sources)
 
     logging.info('Generating query node list...')
-    query_node_list = [list(G.nodes())[i] for i in random.sample(range(graph_size), args.query_nodes)]
+    if args.graph_type == 'example1':
+        query_node_list = [5, 6]
+    else:
+        query_node_list = [list(G.nodes())[i] for i in random.sample(range(graph_size), args.query_nodes)]
     logging.info('...done. Generated %d query nodes.' % len(query_node_list))
 
     construct_stats['query_nodes'] = len(query_node_list)
 
     logging.info('Generating demands...')
-    if args.demand_distribution == 'powerlaw':
-        factor = lambda i: (1.0 + i) ** (-args.powerlaw_exp)
-    else:
-        factor = lambda i: 1.0
-    # normalizing constant so that average rate per demand is args.rate
-    constant = args.rate * args.demand_size / sum((factor(i) for i in range(args.demand_size)))
-    all_demands = [(x, item) for x in query_node_list for item in range(args.catalog_size)]
-    if args.demand_size > len(all_demands):
-        demand_pairs = [random.choice(all_demands) for i in range(args.demand_size)]
-    else:
-        demand_pairs = random.sample(all_demands, args.demand_size)
+    if args.graph_type == 'example1':
+        example1_demands = topologies.example1_demands()
+        demands = []
+        rate = args.rate
+        for (item, x) in example1_demands:
+            paths = example1_demands[(item, x)]
+            distances = {}
+            for path_id in paths:
+                path = paths[path_id]
+                for i in range(len(path)):
+                    path[i] = number_map[path[i]]
+                distances[path_id] = path_length(G, paths[path_id])
 
-    counter = 0
-    demands = []
-    for x, item in demand_pairs:
-        rate = constant * factor(counter)
-        paths, distances = generatePaths(G, x, item_sources[item][0], cutoff=args.max_paths, stretch=args.path_stretch)
-        logging.info(pp(['Generated ', len(paths), 'paths for new demand', (item, x, rate)]))
-        if len(paths) == 0:
-            logging.warning(pp(['No paths exist for new demand', (item, x, rate), 'with target', item_sources[item][0],
-                                ', this demand will be dropped']))
-            continue
-        routing_info = {}
-        routing_info['paths'] = paths
-        routing_info['distances'] = distances
-        new_demand = Demand(item, x, rate, routing_info=routing_info)
-        demands.append(new_demand)
-        logging.debug(pp(['Generated demand', new_demand]))
-        counter += 1
+            x = number_map[x]
+            logging.info(pp(['Generated ', len(paths), 'paths for new demand', (item, x, rate)]))
+            routing_info = {'paths': paths, 'distances': distances}
+            new_demand = Demand(item, x, rate, routing_info=routing_info)
+            demands.append(new_demand)
+            logging.debug(pp(['Generated demand', new_demand]))
+
+    else:
+        if args.demand_distribution == 'powerlaw':
+            factor = lambda i: (1.0 + i) ** (-args.powerlaw_exp)
+        else:
+            factor = lambda i: 1.0
+        # normalizing constant so that average rate per demand is args.rate
+        constant = args.rate * args.demand_size / sum((factor(i) for i in range(args.demand_size)))
+        all_demands = [(x, item) for x in query_node_list for item in range(args.catalog_size)]
+        if args.demand_size > len(all_demands):
+            demand_pairs = [random.choice(all_demands) for i in range(args.demand_size)]
+        else:
+            demand_pairs = random.sample(all_demands, args.demand_size)
+
+        counter = 0
+        demands = []
+        for x, item in demand_pairs:
+            rate = constant * factor(counter)
+            paths, distances = generatePaths(G, x, item_sources[item][0], cutoff=args.max_paths, stretch=args.path_stretch)
+            logging.info(pp(['Generated ', len(paths), 'paths for new demand', (item, x, rate)]))
+            if len(paths) == 0:
+                logging.warning(pp(['No paths exist for new demand', (item, x, rate), 'with target', item_sources[item][0],
+                                    ', this demand will be dropped']))
+                continue
+            routing_info = {'paths': paths, 'distances': distances}
+            new_demand = Demand(item, x, rate, routing_info=routing_info)
+            demands.append(new_demand)
+            logging.debug(pp(['Generated demand', new_demand]))
+            counter += 1
     logging.info('...done. Generated %d demands' % len(demands))
 
     construct_stats['demands'] = len(demands)
 
     logging.info('Generating capacities...')
-    capacities = dict((x, random.randint(args.min_capacity, args.max_capacity)) for x in G.nodes())
+    if args.graph_type == 'example1':
+        example1_capacities = topologies.example1_capacities()
+        capacities = dict((x, 0) for x in G.nodes())
+        for node in example1_capacities:
+            capacities[number_map[node]] = example1_capacities[node]
+    else:
+        capacities = dict((x, random.randint(args.min_capacity, args.max_capacity)) for x in G.nodes())
     logging.info('...done. Generated %d caches' % len(capacities))
     logging.debug('Generated capacities:')
     for key in capacities:
@@ -239,23 +283,31 @@ def main():
     logging.info('Generating bandwidth...')
     # bandwidths = dict((x, random.uniform(args.min_bandwidth, args.max_bandwidth)) for x in G.edges())
     bandwidths = {}
-    for d in demands:
-        rate = d.rate
-        paths = d.routing_info['paths']
-        max_paths = len(paths)
+    if args.graph_type == 'example1':
+        for (x, y) in temp_graph.edges():
+            example1_bandwidths = topologies.example1_bandwidths(args.rate, 0.1, len(demands)*args.rate)
+            xx = number_map[x]
+            yy = number_map[y]
+            bandwidths[(xx, yy)] = example1_bandwidths[(x, y)]
+            bandwidths[(yy, xx)] = bandwidths[(xx, yy)]
+    else:
+        for d in demands:
+            rate = d.rate
+            paths = d.routing_info['paths']
+            max_paths = len(paths)
 
-        for path_id in paths:
-            path = paths[path_id]
-            x = d.query_source
-            s = succFun(x, path)
-
-            while s is not None:
-                if (s, x) in bandwidths:
-                    bandwidths[(s, x)] += args.bandwidth_coefficient * rate / max_paths
-                else:
-                    bandwidths[(s, x)] = args.bandwidth_coefficient * rate / max_paths
-                x = s
+            for path_id in paths:
+                path = paths[path_id]
+                x = d.query_source
                 s = succFun(x, path)
+
+                while s is not None:
+                    if (s, x) in bandwidths:
+                        bandwidths[(s, x)] += args.bandwidth_coefficient * rate / max_paths
+                    else:
+                        bandwidths[(s, x)] = args.bandwidth_coefficient * rate / max_paths
+                    x = s
+                    s = succFun(x, path)
 
     logging.info('...done. Generated %d bandwidths' % len(bandwidths))
     logging.debug('Generated bandwidth:')

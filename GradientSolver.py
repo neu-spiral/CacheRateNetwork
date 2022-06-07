@@ -350,7 +350,7 @@ class FrankWolfe_cache(GradientSolver):
             DX2 = self.find_topK(ZX2, self.capacities)
             self.adapt_topK(X, DX2, gamma)
 
-            lagrangian, obj = self.obj(X, R, Dual)
-            print(t, obj)
+            # lagrangian, obj = self.obj(X, R, Dual)
+            # print(t, obj)
 
         return X

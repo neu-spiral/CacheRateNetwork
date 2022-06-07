@@ -90,9 +90,11 @@ class OptimalRouting:
         problem.solve()
         # print("status:", problem.status)
 
-        for d in range(len(self.demands)):
-            for p in self.demands[d].routing_info['paths']:
-                R[d][p] = R[d][p].value
-
+        if problem.status == 'optimal':
+            for d in range(len(self.demands)):
+                for p in self.demands[d].routing_info['paths']:
+                    R[d][p] = R[d][p].value
+        else:
+            R = None
         return R
 

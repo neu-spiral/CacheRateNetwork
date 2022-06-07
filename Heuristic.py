@@ -1,5 +1,5 @@
 from ProbGenerate import Problem, Demand
-import logging, argparse, pickle, os
+import logging, argparse, pickle, os, time
 from helpers import succFun, Dependencies
 from GradientSolver import FrankWolfe_cache
 from Route import OptimalRouting
@@ -40,13 +40,16 @@ class Heuristic:
         for t in range(iterations):
             X = self.FW.alg(iterations=100, dependencies=dependencies, R=R)
             R = self.route.OptimalRoute(X)
+            if R:
+                obj = self.route.obj(X, R)
 
-            obj = self.route.obj(X, R)
-
-            print(t, obj)
-            result.append((X, R, obj))
-
-        return X, R
+                logging.info((t, obj))
+                result.append((X, R, obj))
+            else:
+                logging.info('infeasible')
+                result.append((X, R, 0))
+                break
+        return result
 
 
 if __name__ == '__main__':
@@ -58,7 +61,7 @@ if __name__ == '__main__':
                         choices=['erdos_renyi', 'balanced_tree', 'hypercube', "cicular_ladder", "cycle",
                                  "grid_2d", 'lollipop', 'expander', 'hypercube', 'star', 'barabasi_albert',
                                  'watts_strogatz', 'regular', 'powerlaw_tree', 'small_world', 'geant',
-                                 'abilene', 'dtelekom', 'servicenetwork'])
+                                 'abilene', 'dtelekom', 'servicenetwork', 'example1'])
     parser.add_argument('--catalog_size', default=100, type=int, help='Catalog size')
     parser.add_argument('--graph_size', default=100, type=int, help='Network size')
     parser.add_argument('--query_nodes', default=10, type=int, help='Number of nodes generating queries')
@@ -68,7 +71,7 @@ if __name__ == '__main__':
                         help='Coefficient of bandwidth for max flow, this coefficient should be between [1, max_paths]')
     parser.add_argument('--debug_level', default='INFO', type=str, help='Debug Level',
                         choices=['INFO', 'DEBUG', 'WARNING', 'ERROR'])
-    parser.add_argument('--iterations', default=1000, type=int, help='Iterations')
+    parser.add_argument('--iterations', default=100, type=int, help='Iterations')
 
     args = parser.parse_args()
 
