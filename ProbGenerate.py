@@ -2,7 +2,7 @@ import logging, argparse
 import networkx
 import random
 import numpy as np
-from helpers import pp, generatePaths, succFun, path_length
+from helpers import pp, generatePaths, succFun, path_length, Dependencies
 
 import topologies
 import pickle
@@ -87,7 +87,7 @@ def main():
                         help='Degree. Used by balanced_tree, regular, barabasi_albert, watts_strogatz')
     parser.add_argument('--graph_p', default=0.10, type=int, help='Probability, used in erdos_renyi, watts_strogatz')
     parser.add_argument('--random_seed', default=1234567890, type=int, help='Random seed')
-    parser.add_argument('--debug_level', default='DEBUG', type=str, help='Debug Level',
+    parser.add_argument('--debug_level', default='INFO', type=str, help='Debug Level',
                         choices=['INFO', 'DEBUG', 'WARNING', 'ERROR'])
     #   parser.add_argument('--cache_keyword_parameters',default='{}',type=str,help='Networked Cache additional constructor parameters')
 
@@ -98,12 +98,6 @@ def main():
     logging.basicConfig(level=args.debug_level)
     random.seed(args.random_seed)
     np.random.seed(args.random_seed + 2213)
-
-    dir = "INPUT/"
-    if not os.path.exists(dir):
-        os.mkdir(dir)
-    out = dir + args.outputfile + "_%s_%ditems_%dnodes_%dquerynodes_%ddemands_%dcapcity_%fbandwidth" % (
-    args.graph_type, args.catalog_size, args.graph_size, args.query_nodes, args.demand_size, args.max_capacity, args.bandwidth_coefficient)
 
     def graphGenerator():
         if args.graph_type == "erdos_renyi":
@@ -229,7 +223,7 @@ def main():
                 distances[path_id] = path_length(G, paths[path_id])
 
             x = number_map[x]
-            logging.info(pp(['Generated ', len(paths), 'paths for new demand', (item, x, rate)]))
+            logging.debug(pp(['Generated ', len(paths), 'paths for new demand', (item, x, rate)]))
             routing_info = {'paths': paths, 'distances': distances}
             new_demand = Demand(item, x, rate, routing_info=routing_info)
             demands.append(new_demand)
@@ -253,7 +247,7 @@ def main():
         for x, item in demand_pairs:
             rate = constant * factor(counter)
             paths, distances = generatePaths(G, x, item_sources[item][0], cutoff=args.max_paths, stretch=args.path_stretch)
-            logging.info(pp(['Generated ', len(paths), 'paths for new demand', (item, x, rate)]))
+            logging.debug(pp(['Generated ', len(paths), 'paths for new demand', (item, x, rate)]))
             if len(paths) == 0:
                 logging.warning(pp(['No paths exist for new demand', (item, x, rate), 'with target', item_sources[item][0],
                                     ', this demand will be dropped']))
@@ -291,7 +285,31 @@ def main():
             bandwidths[(xx, yy)] = example1_bandwidths[(x, y)]
             bandwidths[(yy, xx)] = bandwidths[(xx, yy)]
     else:
+        '''Random Cache'''
+        X = {}
+        dependencies = Dependencies(demands)
+        for (v, i) in dependencies:
+            if v in X:
+                # X[v][i] = 0
+                X[v][i] = 1
+            else:
+                # X[v] = {i: 0}
+                X[v] = {i: 1}
+
+        for v in X:
+            item_total = len(X[v])
+            # cache_average = capacities[v] / item_total
+            # for i in X[v]:
+            #     X[v][i] = min(cache_average, 1)
+            sampled_items = random.sample(list(X.keys()), min(capacities[v], item_total))
+            for i in X[v]:
+                if i in sampled_items:
+                    X[v][i] = 1
+                else:
+                    X[v][i] = 0
+
         for d in demands:
+            item = d.item
             rate = d.rate
             paths = d.routing_info['paths']
             max_paths = len(paths)
@@ -300,12 +318,13 @@ def main():
                 path = paths[path_id]
                 x = d.query_source
                 s = succFun(x, path)
-
+                prodsofar = 1
                 while s is not None:
+                    prodsofar *= (1 - X[x][item])
                     if (s, x) in bandwidths:
-                        bandwidths[(s, x)] += args.bandwidth_coefficient * rate / max_paths
+                        bandwidths[(s, x)] += args.bandwidth_coefficient * rate / max_paths * prodsofar
                     else:
-                        bandwidths[(s, x)] = args.bandwidth_coefficient * rate / max_paths
+                        bandwidths[(s, x)] = args.bandwidth_coefficient * rate / max_paths * prodsofar
                     x = s
                     s = succFun(x, path)
 
@@ -316,9 +335,15 @@ def main():
 
     logging.info('Building CacheRouteNetwork')
 
-    pr = Problem(G, capacities, bandwidths, demands, weights)  # pack the graph, capacity for each node, attributes of each demands(requests), bandwidth for each edge
+    ''' pack the graph, capacity for each node, attributes of each demands(requests), bandwidth for each edge '''
+    pr = Problem(G, capacities, bandwidths, demands, weights)
+    dir = "INPUT3/"
+    if not os.path.exists(dir):
+        os.mkdir(dir)
+    out = dir + args.outputfile + "_%s_%ditems_%dnodes_%dquerynodes_%ddemands_%dcapcity_%fbandwidth" % (
+    args.graph_type, args.catalog_size, args.graph_size, args.query_nodes, args.demand_size, args.max_capacity, args.bandwidth_coefficient)
 
-    pr.pickle_cls(out) # can only pickle functions defined at the top level of a module
+    pr.pickle_cls(out)  # can only pickle functions defined at the top level of a module
     logging.info('Save data to ' + out)
     logging.info('...done')
 

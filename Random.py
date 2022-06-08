@@ -27,7 +27,7 @@ class Random(OptimalRouting):
                 cache_average = self.capacities[v] / item_total
                 for i in X[v]:
                     if X[v][i] > 0:
-                        X[v][i] = cache_average
+                        X[v][i] = min(cache_average, 1)
 
         return X
 
@@ -102,7 +102,7 @@ if __name__ == '__main__':
 
     args.debug_level = eval("logging." + args.debug_level)
     logging.basicConfig(level=args.debug_level)
-    dir = "INPUT/"
+    dir = "INPUT3/"
     input = dir + args.inputfile + "_%s_%ditems_%dnodes_%dquerynodes_%ddemands_%dcapcity_%fbandwidth" % (
         args.graph_type, args.catalog_size, args.graph_size, args.query_nodes, args.demand_size,
         args.max_capacity, args.bandwidth_coefficient)
@@ -111,7 +111,7 @@ if __name__ == '__main__':
 
     CR = CacheRoute(P)
     result = CR.alg()
-    dir = "Random/CacheRoute/"
+    dir = "Random3/CacheRoute/"
     if not os.path.exists(dir):
         os.makedirs(dir)
     fname = dir + "%s_%ditems_%dnodes_%dquerynodes_%ddemands_%dcapcity_%fbandwidth" % (
@@ -123,7 +123,7 @@ if __name__ == '__main__':
 
     RC = RouteCache(P)
     result = RC.alg()
-    dir = "Random/RouteCache/"
+    dir = "Random3/RouteCache/"
     if not os.path.exists(dir):
         os.makedirs(dir)
     fname = dir + "%s_%ditems_%dnodes_%dquerynodes_%ddemands_%dcapcity_%fbandwidth" % (

@@ -195,12 +195,14 @@ def Dependencies(demands):
         for p in demands[d].routing_info['paths']:
             path = paths[p]
             x = demands[d].query_source
-            while x is not None:
+            s = succFun(x, path)
+            while s is not None:
                 if (x, item) not in dependencies:
                     dependencies[(x, item)] = [(d,p)]
                 else:
                     dependencies[(x, item)].append((d,p))
-                x = succFun(x, path)
+                x = s
+                s = succFun(x, path)
     return dependencies
 
 
