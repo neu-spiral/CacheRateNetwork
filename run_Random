@@ -1,9 +1,21 @@
 #! /bin/bash
 
-for bandwidth in 1 1.5 2
-do
-  for graph in grid_2d erdos_renyi hypercube star
+for type in 1 2 3
   do
-     sbatch ../script.sh Random.py Prob --graph_type $graph --bandwidth_coefficient $bandwidth
+  for bandwidth in 1 1.5 2 2.5 3
+  do
+    for graph in grid_2d erdos_renyi hypercube balanced_tree small_world
+    do
+       sbatch ../script.sh Random.py Prob --graph_type $graph --bandwidth_coefficient $bandwidth --bandwidth_type $type
+    done
+    for graph in geant dtelekom
+    do
+      sbatch ../script.sh Random.py Prob --graph_type $graph --bandwidth_coefficient $bandwidth --query_nodes 4 --bandwidth_type $type
+    done
   done
+done
+
+for graph in example1 example2
+do
+  sbatch ../script.sh Random.py Prob --graph_type $graph
 done

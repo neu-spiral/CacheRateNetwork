@@ -504,10 +504,17 @@ def example1_capacities():
 
 
 def example1_bandwidths(rate, epsilon, inf):
-    weights = {("node1", "node3"): inf, ("node3", "node4"): inf, ("node2", "node4"): epsilon,
+    bandwidths = {("node1", "node3"): inf, ("node3", "node4"): inf, ("node2", "node4"): epsilon,
                ("node2", "node5"): inf, ("node5", "node7"): epsilon, ("node4", "node7"): 2*rate,
                ("node4", "node6"): inf}
-    return weights
+    return bandwidths
+
+
+def example2_bandwidths(rate, epsilon, inf):
+    bandwidths = {("node1", "node3"): inf, ("node3", "node4"): inf, ("node2", "node4"): inf,
+               ("node2", "node5"): inf, ("node5", "node7"): epsilon, ("node4", "node7"): 2*rate,
+               ("node4", "node6"): inf}
+    return bandwidths
 
 
 def example1_demands():

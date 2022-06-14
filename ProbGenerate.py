@@ -64,6 +64,8 @@ def main():
     parser.add_argument('--min_capacity', default=1, type=int, help='Minimum capacity per cache')
     parser.add_argument('--bandwidth_coefficient', default=1, type=float,
                         help='Coefficient of bandwidth for max flow, this coefficient should be between (1, max_paths)')
+    parser.add_argument('--bandwidth_type', default=1, type=int,
+                        help='Type of generating bandwidth: 1. no cache, 2. uniform cache, 3. random integer cache')
     parser.add_argument('--max_weight', default=100.0, type=float, help='Maximum edge weight')
     parser.add_argument('--min_weight', default=1.0, type=float, help='Minimum edge weight')
     parser.add_argument('--rate', default=1.0, type=float, help='Average rate per demand')
@@ -81,7 +83,7 @@ def main():
                         choices=['erdos_renyi', 'balanced_tree', 'hypercube', "cicular_ladder", "cycle", "grid_2d",
                                  'lollipop', 'expander', 'star', 'barabasi_albert', 'watts_strogatz',
                                  'regular', 'powerlaw_tree', 'small_world', 'geant', 'abilene', 'dtelekom',
-                                 'servicenetwork', 'example1'])
+                                 'servicenetwork', 'example1', 'example2'])
     parser.add_argument('--graph_size', default=100, type=int, help='Network size')
     parser.add_argument('--graph_degree', default=3, type=int,
                         help='Degree. Used by balanced_tree, regular, barabasi_albert, watts_strogatz')
@@ -144,7 +146,7 @@ def main():
             return topologies.Abilene()
         if args.graph_type == 'servicenetwork':
             return topologies.ServiceNetwork()
-        if args.graph_type == 'example1':
+        if args.graph_type == 'example1' or args.graph_type == 'example2':
             return topologies.example1()
 
     construct_stats = {}
@@ -160,8 +162,8 @@ def main():
     number_map = dict(zip(temp_graph.nodes(), range(len(temp_graph.nodes()))))
     G.add_nodes_from(number_map.values())
     weights = {}
-    if args.graph_type == 'example1':
-        example1_weights = topologies.example1_weights(100)
+    if args.graph_type == 'example1' or args.graph_type == 'example2':
+        example1_weights = topologies.example1_weights(1000)
         for (x, y) in temp_graph.edges():
             xx = number_map[x]
             yy = number_map[y]
@@ -187,7 +189,7 @@ def main():
     construct_stats['edge_size'] = edge_size
 
     logging.info('Generating item sources...')
-    if args.graph_type == 'example1':
+    if args.graph_type == 'example1' or args.graph_type == 'example2':
         item_sources = {0: [0], 1: [1]}
     else:
         item_sources = dict((item, [list(G.nodes())[source]]) for item, source in
@@ -200,7 +202,7 @@ def main():
     construct_stats['sources'] = len(item_sources)
 
     logging.info('Generating query node list...')
-    if args.graph_type == 'example1':
+    if args.graph_type == 'example1' or args.graph_type == 'example2':
         query_node_list = [5, 6]
     else:
         query_node_list = [list(G.nodes())[i] for i in random.sample(range(graph_size), args.query_nodes)]
@@ -209,7 +211,7 @@ def main():
     construct_stats['query_nodes'] = len(query_node_list)
 
     logging.info('Generating demands...')
-    if args.graph_type == 'example1':
+    if args.graph_type == 'example1' or args.graph_type == 'example2':
         example1_demands = topologies.example1_demands()
         demands = []
         rate = args.rate
@@ -262,7 +264,7 @@ def main():
     construct_stats['demands'] = len(demands)
 
     logging.info('Generating capacities...')
-    if args.graph_type == 'example1':
+    if args.graph_type == 'example1' or args.graph_type == 'example2':
         example1_capacities = topologies.example1_capacities()
         capacities = dict((x, 0) for x in G.nodes())
         for node in example1_capacities:
@@ -277,36 +279,45 @@ def main():
     logging.info('Generating bandwidth...')
     # bandwidths = dict((x, random.uniform(args.min_bandwidth, args.max_bandwidth)) for x in G.edges())
     bandwidths = {}
-    if args.graph_type == 'example1':
+    if args.graph_type == 'example1' or args.graph_type == 'example2':
+        if args.graph_type == 'example1':
+            example_bandwidths = topologies.example1_bandwidths(args.rate, 0.1, len(demands) * args.rate)
+        elif args.graph_type == 'example2':
+            example_bandwidths = topologies.example2_bandwidths(args.rate, 0.1, len(demands) * args.rate)
         for (x, y) in temp_graph.edges():
-            example1_bandwidths = topologies.example1_bandwidths(args.rate, 0.1, len(demands)*args.rate)
             xx = number_map[x]
             yy = number_map[y]
-            bandwidths[(xx, yy)] = example1_bandwidths[(x, y)]
+            bandwidths[(xx, yy)] = example_bandwidths[(x, y)]
             bandwidths[(yy, xx)] = bandwidths[(xx, yy)]
     else:
         '''Random Cache'''
         X = {}
         dependencies = Dependencies(demands)
         for (v, i) in dependencies:
-            if v in X:
-                # X[v][i] = 0
-                X[v][i] = 1
+            if args.bandwidth_type == 1:
+                if v in X:
+                    X[v][i] = 0
+                else:
+                    X[v] = {i: 0}
             else:
-                # X[v] = {i: 0}
-                X[v] = {i: 1}
+                if v in X:
+                    X[v][i] = 1
+                else:
+                    X[v] = {i: 1}
 
         for v in X:
             item_total = len(X[v])
-            # cache_average = capacities[v] / item_total
-            # for i in X[v]:
-            #     X[v][i] = min(cache_average, 1)
-            sampled_items = random.sample(list(X.keys()), min(capacities[v], item_total))
-            for i in X[v]:
-                if i in sampled_items:
-                    X[v][i] = 1
-                else:
-                    X[v][i] = 0
+            if args.bandwidth_type == 2:
+                cache_average = capacities[v] / item_total
+                for i in X[v]:
+                    X[v][i] = min(cache_average, 1)
+            elif args.bandwidth_type == 3:
+                sampled_items = random.sample(list(X.keys()), min(capacities[v], item_total))
+                for i in X[v]:
+                    if i in sampled_items:
+                        X[v][i] = 1
+                    else:
+                        X[v][i] = 0
 
         for d in demands:
             item = d.item
@@ -327,6 +338,9 @@ def main():
                         bandwidths[(s, x)] = args.bandwidth_coefficient * rate / max_paths * prodsofar
                     x = s
                     s = succFun(x, path)
+        for e in bandwidths:
+            if bandwidths[e] == 0:
+                bandwidths[e] = 0.001
 
     logging.info('...done. Generated %d bandwidths' % len(bandwidths))
     logging.debug('Generated bandwidth:')
@@ -337,7 +351,7 @@ def main():
 
     ''' pack the graph, capacity for each node, attributes of each demands(requests), bandwidth for each edge '''
     pr = Problem(G, capacities, bandwidths, demands, weights)
-    dir = "INPUT3/"
+    dir = "INPUT%d/" % (args.bandwidth_type)
     if not os.path.exists(dir):
         os.mkdir(dir)
     out = dir + args.outputfile + "_%s_%ditems_%dnodes_%dquerynodes_%ddemands_%dcapcity_%fbandwidth" % (
