@@ -79,7 +79,7 @@ class RouteCache(Random):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Run algorithm',
+    parser = argparse.ArgumentParser(description='Run Random',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('inputfile', help='Output file')
 
@@ -87,7 +87,7 @@ if __name__ == '__main__':
                         choices=['erdos_renyi', 'balanced_tree', 'hypercube', "cicular_ladder", "cycle",
                                  "grid_2d", 'lollipop', 'expander', 'hypercube', 'star', 'barabasi_albert',
                                  'watts_strogatz', 'regular', 'powerlaw_tree', 'small_world', 'geant',
-                                 'abilene', 'dtelekom', 'servicenetwork', 'example1', 'example2'])
+                                 'abilene', 'dtelekom', 'servicenetwork', 'example1', 'example2', 'abilene2'])
     parser.add_argument('--catalog_size', default=100, type=int, help='Catalog size')
     parser.add_argument('--graph_size', default=100, type=int, help='Network size')
     parser.add_argument('--query_nodes', default=10, type=int, help='Number of nodes generating queries')

@@ -115,7 +115,7 @@ def dict_min_val(d):
 
 
 def path_length(G, path):
-    return sum(G[u][v]['weight'] for (u, v) in zip(path[:-1], path[1:]))
+    return sum(G[u][v]['weight'] for (u, v) in zip(path[1:], path[:-1]))
 
 
 def is_simple(path):

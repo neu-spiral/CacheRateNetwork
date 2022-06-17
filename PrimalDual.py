@@ -71,7 +71,7 @@ class PrimalDual:
             # print(flow[e], self.bandwidths[e])
             if self.Dual[e] < 0:
                 self.Dual[e] = 0
-            overflow[e] /= self.bandwidths[e]
+            overflow[e] = self.bandwidths[e]
         return overflow
 
     # def DualStep_momentum(self, X, R, stepsize):
@@ -142,7 +142,7 @@ class PrimalDual:
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Run algorithm',
+    parser = argparse.ArgumentParser(description='Run PrimalDual',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('inputfile', help='Output file')
 
@@ -150,7 +150,7 @@ if __name__ == '__main__':
                         choices=['erdos_renyi', 'balanced_tree', 'hypercube', "cicular_ladder", "cycle",
                                  "grid_2d", 'lollipop', 'expander', 'hypercube', 'star', 'barabasi_albert',
                                  'watts_strogatz', 'regular', 'powerlaw_tree', 'small_world', 'geant',
-                                 'abilene', 'dtelekom', 'servicenetwork', 'example1', 'example2'])
+                                 'abilene', 'dtelekom', 'servicenetwork', 'example1', 'example2', 'abilene2'])
     parser.add_argument('--catalog_size', default=100, type=int, help='Catalog size')
     parser.add_argument('--graph_size', default=100, type=int, help='Network size')
     parser.add_argument('--query_nodes', default=10, type=int, help='Number of nodes generating queries')
@@ -177,10 +177,12 @@ if __name__ == '__main__':
     logging.info('Read data from ' + input)
     PD = PrimalDual(P)
     result = PD.alg(args.iterations, args.stepsize)
-    if args.bandwidth_type == 1:
-        dir = "OUTPUT6/"
-    else:
-        dir = "OUTPUT%d/" % (args.bandwidth_type+6)
+    # if args.bandwidth_type == 1:
+    #     dir = "OUTPUT6/"
+    # else:
+    #     dir = "OUTPUT%d/" % (args.bandwidth_type+6)
+    dir = "OUTPUT%d/" % (args.bandwidth_type + 9)
+
     if not os.path.exists(dir):
         os.mkdir(dir)
     fname = dir + "%s_%ditems_%dnodes_%dquerynodes_%ddemands_%dcapcity_%fbandwidth_%dstepsize" % (

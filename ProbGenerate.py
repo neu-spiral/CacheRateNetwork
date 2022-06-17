@@ -83,7 +83,7 @@ def main():
                         choices=['erdos_renyi', 'balanced_tree', 'hypercube', "cicular_ladder", "cycle", "grid_2d",
                                  'lollipop', 'expander', 'star', 'barabasi_albert', 'watts_strogatz',
                                  'regular', 'powerlaw_tree', 'small_world', 'geant', 'abilene', 'dtelekom',
-                                 'servicenetwork', 'example1', 'example2'])
+                                 'servicenetwork', 'example1', 'example2', 'abilene2'])
     parser.add_argument('--graph_size', default=100, type=int, help='Network size')
     parser.add_argument('--graph_degree', default=3, type=int,
                         help='Degree. Used by balanced_tree, regular, barabasi_albert, watts_strogatz')
@@ -142,7 +142,7 @@ def main():
             return topologies.GEANT()
         if args.graph_type == 'dtelekom':
             return topologies.Dtelekom()
-        if args.graph_type == 'abilene':
+        if args.graph_type == 'abilene' or args.graph_type == 'abilene2':
             return topologies.Abilene()
         if args.graph_type == 'servicenetwork':
             return topologies.ServiceNetwork()
@@ -163,15 +163,27 @@ def main():
     G.add_nodes_from(number_map.values())
     weights = {}
     if args.graph_type == 'example1' or args.graph_type == 'example2':
-        example1_weights = topologies.example1_weights(1000)
+        example_weights = topologies.example1_weights(100)
         for (x, y) in temp_graph.edges():
             xx = number_map[x]
             yy = number_map[y]
             G.add_edges_from(((xx, yy), (yy, xx)))
-            weights[(xx, yy)] = example1_weights[(x, y)]
+            weights[(xx, yy)] = example_weights[(x, y)]
             weights[(yy, xx)] = weights[(xx, yy)]
             G[xx][yy]['weight'] = weights[(xx, yy)]
             G[yy][xx]['weight'] = weights[(yy, xx)]
+    elif args.graph_type == 'abilene' or args.graph_type == 'abilene2':
+        abilene_weights = topologies.Abilene_weights(100)
+        for (x, y) in temp_graph.edges():
+            xx = number_map[x]
+            yy = number_map[y]
+            G.add_edges_from(((xx, yy), (yy, xx)))
+            if (x, y) in abilene_weights:
+                weights[(yy, xx)] = abilene_weights[(x, y)]
+                G[yy][xx]['weight'] = weights[(yy, xx)]
+            if (y, x) in abilene_weights:
+                weights[(xx, yy)] = abilene_weights[(y, x)]
+                G[xx][yy]['weight'] = weights[(xx, yy)]
     else:
         for (x, y) in temp_graph.edges():
             xx = number_map[x]
@@ -190,7 +202,9 @@ def main():
 
     logging.info('Generating item sources...')
     if args.graph_type == 'example1' or args.graph_type == 'example2':
-        item_sources = {0: [0], 1: [1]}
+        item_sources = {0: [number_map['node1']], 1: [number_map['node2']]}
+    elif args.graph_type == 'abilene' or args.graph_type == 'abilene2':
+        item_sources = {0: [number_map['DENV']], 1: [number_map['DENV']], 2: [number_map['CHIC']], 3: [number_map['CHIC']]}
     else:
         item_sources = dict((item, [list(G.nodes())[source]]) for item, source in
                             zip(range(args.catalog_size), np.random.choice(range(graph_size), args.catalog_size)))
@@ -203,7 +217,9 @@ def main():
 
     logging.info('Generating query node list...')
     if args.graph_type == 'example1' or args.graph_type == 'example2':
-        query_node_list = [5, 6]
+        query_node_list = [number_map['node6'], number_map['node7']]
+    elif args.graph_type == 'abilene' or args.graph_type == 'abilene2':
+        query_node_list = [number_map['HOUS'], number_map['ATLA'], number_map['LOSA']]
     else:
         query_node_list = [list(G.nodes())[i] for i in random.sample(range(graph_size), args.query_nodes)]
     logging.info('...done. Generated %d query nodes.' % len(query_node_list))
@@ -211,12 +227,15 @@ def main():
     construct_stats['query_nodes'] = len(query_node_list)
 
     logging.info('Generating demands...')
-    if args.graph_type == 'example1' or args.graph_type == 'example2':
-        example1_demands = topologies.example1_demands()
+    if args.graph_type == 'example1' or args.graph_type == 'example2' or args.graph_type == 'abilene' or args.graph_type == 'abilene2':
+        if args.graph_type == 'example1' or args.graph_type == 'example2':
+            example_demands = topologies.example1_demands()
+        else:
+            example_demands = topologies.Abilene_demands()
         demands = []
         rate = args.rate
-        for (item, x) in example1_demands:
-            paths = example1_demands[(item, x)]
+        for (item, x) in example_demands:
+            paths = example_demands[(item, x)]
             distances = {}
             for path_id in paths:
                 path = paths[path_id]
@@ -230,7 +249,6 @@ def main():
             new_demand = Demand(item, x, rate, routing_info=routing_info)
             demands.append(new_demand)
             logging.debug(pp(['Generated demand', new_demand]))
-
     else:
         if args.demand_distribution == 'powerlaw':
             factor = lambda i: (1.0 + i) ** (-args.powerlaw_exp)
@@ -264,11 +282,17 @@ def main():
     construct_stats['demands'] = len(demands)
 
     logging.info('Generating capacities...')
-    if args.graph_type == 'example1' or args.graph_type == 'example2':
-        example1_capacities = topologies.example1_capacities()
+    if args.graph_type == 'example1' or args.graph_type == 'example2' or args.graph_type == 'abilene' or args.graph_type == 'abilene2':
+        if args.graph_type == 'example1' or args.graph_type == 'example2':
+            example_capacities = topologies.example1_capacities()
+        elif args.graph_type == 'abilene':
+            example_capacities = topologies.Abilene_capacities()
+        else:
+            example_capacities = topologies.Abilene2_capacities()
+
         capacities = dict((x, 0) for x in G.nodes())
-        for node in example1_capacities:
-            capacities[number_map[node]] = example1_capacities[node]
+        for node in example_capacities:
+            capacities[number_map[node]] = example_capacities[node]
     else:
         capacities = dict((x, random.randint(args.min_capacity, args.max_capacity)) for x in G.nodes())
     logging.info('...done. Generated %d caches' % len(capacities))
@@ -281,14 +305,27 @@ def main():
     bandwidths = {}
     if args.graph_type == 'example1' or args.graph_type == 'example2':
         if args.graph_type == 'example1':
-            example_bandwidths = topologies.example1_bandwidths(args.rate, 0.1, len(demands) * args.rate)
+            example_bandwidths = topologies.example1_bandwidths(0.1, 100)
         elif args.graph_type == 'example2':
-            example_bandwidths = topologies.example2_bandwidths(args.rate, 0.1, len(demands) * args.rate)
+            example_bandwidths = topologies.example2_bandwidths(0.1, 100)
+
         for (x, y) in temp_graph.edges():
             xx = number_map[x]
             yy = number_map[y]
-            bandwidths[(xx, yy)] = example_bandwidths[(x, y)]
+            bandwidths[(xx, yy)] = example_bandwidths[(x, y)] * args.bandwidth_coefficient
             bandwidths[(yy, xx)] = bandwidths[(xx, yy)]
+    elif args.graph_type == 'abilene' or args.graph_type == 'abilene2':
+        if args.graph_type == 'abilene':
+            abilene_bandwidths = topologies.Abilene_bandwidths(0.1, 100)
+        elif args.graph_type == 'abilene2':
+            abilene_bandwidths = topologies.Abilene2_bandwidths(0.1, 100)
+        for (x, y) in temp_graph.edges():
+            xx = number_map[x]
+            yy = number_map[y]
+            if (x, y) in abilene_bandwidths:
+                bandwidths[(yy, xx)] = abilene_bandwidths[(x, y)] * args.bandwidth_coefficient
+            if (y, x) in abilene_bandwidths:
+                bandwidths[(xx, yy)] = abilene_bandwidths[(y, x)] * args.bandwidth_coefficient
     else:
         '''Random Cache'''
         X = {}

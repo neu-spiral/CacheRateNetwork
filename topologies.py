@@ -352,7 +352,7 @@ def Dtelekom():
 
 
 def Abilene():
-    # nodeNumber=9
+    # nodeNumber=11
     # objectNumber=2000
     G = Graph()
 
@@ -362,24 +362,74 @@ def Abilene():
     G.add_node("ATLA")
     G.add_node("HOUS")
     G.add_node("KANS")
-    G.add_node("SALT")
+    G.add_node("DENV")
     G.add_node("LOSA")
     G.add_node("SEAT")
+    G.add_node("SUNN")
+    G.add_node("INDI")
 
     G.add_edge("NEWY", "WASH")
     G.add_edge("NEWY", "CHIC")
-    G.add_edge("CHIC", "WASH")
+    G.add_edge("CHIC", "INDI")
     G.add_edge("ATLA", "WASH")
-    G.add_edge("ATLA", "CHIC")
+    G.add_edge("ATLA", "INDI")
     G.add_edge("ATLA", "HOUS")
-    G.add_edge("KANS", "CHIC")
+    G.add_edge("KANS", "INDI")
     G.add_edge("KANS", "HOUS")
-    G.add_edge("KANS", "SALT")
+    G.add_edge("KANS", "DENV")
     G.add_edge("LOSA", "HOUS")
-    G.add_edge("LOSA", "SALT")
-    G.add_edge("LOSA", "SEAT")
-    G.add_edge("SALT", "SEAT")
+    G.add_edge("LOSA", "SUNN")
+    G.add_edge("SUNN", "DENV")
+    G.add_edge("SUNN", "SEAT")
+    G.add_edge("DENV", "SEAT")
     return G
+
+def Abilene_weights(M):
+    weights = {("LOSA", "HOUS"): 1, ("HOUS", "ATLA"): 1, ("ATLA", "WASH"): M, ("WASH", "NEWY"): M, ("NEWY", "CHIC"): M,
+               ("ATLA", "INDI"): M, ("INDI", "CHIC"): M, ("HOUS", "KANS"): 1, ("KANS", "INDI"): 1,
+               ("ATLA", "HOUS"): 1, ("HOUS", "LOSA"): 1, ("LOSA", "SUNN"): M, ("SUNN", "SEAT"): M, ("SEAT", "DENV"): M,
+               ("SUNN", "DENV"): M, ("ATLA", "INDI"): 1, ("INDI", "KANS"): 1, ("KANS", "DENV"): M}
+    return weights
+
+
+def Abilene_capacities():
+    capacities = {"ATLA": 1, "KANS": 1, "SUNN": 1}
+    return capacities
+
+
+def Abilene2_capacities():
+    capacities = {"ATLA": 1, "KANS": 2, "SUNN": 1}
+    return capacities
+
+
+def Abilene_bandwidths(epsilon, inf):
+    bandwidths = {("LOSA", "HOUS"): inf, ("HOUS", "ATLA"): inf, ("ATLA", "WASH"): inf, ("WASH", "NEWY"): inf,
+                  ("NEWY", "CHIC"): inf, ("ATLA", "INDI"): epsilon, ("INDI", "CHIC"): 5*epsilon, ("HOUS", "KANS"): inf,
+                  ("KANS", "INDI"): inf,
+                  ("ATLA", "HOUS"): inf, ("HOUS", "LOSA"): inf, ("LOSA", "SUNN"): inf, ("SUNN", "SEAT"): inf,
+                  ("SEAT", "DENV"): inf,
+                  ("SUNN", "DENV"): epsilon, ("ATLA", "INDI"): inf, ("INDI", "KANS"): 5*epsilon, ("KANS", "DENV"): inf}
+    return bandwidths
+
+
+def Abilene2_bandwidths(epsilon, inf):
+    bandwidths = {("LOSA", "HOUS"): inf, ("HOUS", "ATLA"): inf, ("ATLA", "WASH"): inf, ("WASH", "NEWY"): inf,
+                  ("NEWY", "CHIC"): inf, ("ATLA", "INDI"): epsilon, ("INDI", "CHIC"): inf, ("HOUS", "KANS"): inf,
+                  ("KANS", "INDI"): inf,
+                  ("ATLA", "HOUS"): inf, ("HOUS", "LOSA"): inf, ("LOSA", "SUNN"): inf, ("SUNN", "SEAT"): inf,
+                  ("SEAT", "DENV"): inf,
+                  ("SUNN", "DENV"): inf, ("ATLA", "INDI"): inf, ("INDI", "KANS"): epsilon, ("KANS", "DENV"): inf}
+    return bandwidths
+
+
+def Abilene_demands():
+    """(item, query node): path dictionary"""
+    demands = {(0, "HOUS"): {0: ["HOUS", "LOSA", "SUNN", "SEAT", "DENV"]},
+               (1, "ATLA"): {0: ["ATLA", "HOUS", "LOSA", "SUNN", "DENV"], 1: ["ATLA", "INDI", "KANS", "DENV"]},
+               (2, "HOUS"): {0: ["HOUS", "ATLA", "INDI", "CHIC"], 1: ["HOUS", "KANS", "INDI", "CHIC"]},
+               (3, "LOSA"): {0: ["LOSA", "HOUS", "ATLA", "WASH", "NEWY", "CHIC"]},
+               }
+    return demands
 
 
 def ServiceNetwork():
@@ -503,17 +553,17 @@ def example1_capacities():
     return capacities
 
 
-def example1_bandwidths(rate, epsilon, inf):
+def example1_bandwidths(epsilon, inf):
     bandwidths = {("node1", "node3"): inf, ("node3", "node4"): inf, ("node2", "node4"): epsilon,
-               ("node2", "node5"): inf, ("node5", "node7"): epsilon, ("node4", "node7"): 2*rate,
-               ("node4", "node6"): inf}
+                  ("node2", "node5"): inf, ("node5", "node7"): epsilon, ("node4", "node7"): inf,
+                  ("node4", "node6"): inf}
     return bandwidths
 
 
-def example2_bandwidths(rate, epsilon, inf):
+def example2_bandwidths(epsilon, inf):
     bandwidths = {("node1", "node3"): inf, ("node3", "node4"): inf, ("node2", "node4"): inf,
-               ("node2", "node5"): inf, ("node5", "node7"): epsilon, ("node4", "node7"): 2*rate,
-               ("node4", "node6"): inf}
+                  ("node2", "node5"): inf, ("node5", "node7"): epsilon, ("node4", "node7"): inf,
+                  ("node4", "node6"): inf}
     return bandwidths
 
 

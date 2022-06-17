@@ -21,7 +21,7 @@ for type in 1 2 3
         sbatch ../script.sh PrimalDual.py Prob --graph_type $graph --bandwidth_coefficient $bandwidth --stepsize $stepsize --bandwidth_type $type
       done
     done
-    for graph in geant dtelekom
+    for graph in geant dtelekom example1 example2 abilene abilene2
     do
       for stepsize in 10 50 100
       do
@@ -31,13 +31,5 @@ for type in 1 2 3
   done
 done
 
-
-for graph in example1 example2
-do
-  for stepsize in 10 50
-  do
-    sbatch ../script.sh PrimalDual.py Prob --graph_type $graph --stepsize $stepsize
-  done
-done
 
 #Prob --graph_type grid_2d --graph_size 20 --catalog_size 10 --demand_size 100 --max_paths 2 --query_nodes 2 --bandwidth_coefficient 0.75 --max_capacity 1

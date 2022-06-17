@@ -8,15 +8,9 @@ for type in 1 2 3
     do
       sbatch ../script.sh ProbGenerate.py Prob --graph_type $graph --bandwidth_coefficient $bandwidth --bandwidth_type $type
     done
-    for graph in geant dtelekom
+    for graph in geant dtelekom example1 example2 abilene abilene2
     do
       sbatch ../script.sh ProbGenerate.py Prob --graph_type $graph --bandwidth_coefficient $bandwidth --query_nodes 4 --bandwidth_type $type
     done
   done
-done
-
-
-for graph in example1 example2
-do
-  sbatch ../script.sh ProbGenerate.py Prob --graph_type $graph
 done
