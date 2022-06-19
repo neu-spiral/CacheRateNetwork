@@ -71,8 +71,8 @@ class PrimalDual:
             # print(flow[e], self.bandwidths[e])
             if self.Dual[e] < 0:
                 self.Dual[e] = 0
-            overflow[e] = self.bandwidths[e]
-        return overflow
+            # overflow[e] /= self.bandwidths[e]
+        return overflow, flow
 
     # def DualStep_momentum(self, X, R, stepsize):
     #     # calculate flow over each edge
@@ -111,7 +111,7 @@ class PrimalDual:
     #             temp_Dual = 0
     #         self.Dual_old[e], self.Dual[e] = self.Dual[e], temp_Dual
     #         overflow[e] /= self.bandwidths[e]
-    #     return overflow
+    #     return overflow, flow
 
     def adapt(self, X_new, X_old, smooth):
         '''Adapt solution combined with old solution'''
@@ -133,11 +133,11 @@ class PrimalDual:
             self.adapt(X, self.X, smooth)
             self.adapt(R, self.R, smooth)
 
-            overflow = self.DualStep(X, R, stepsize / (i+1)**0.5)
+            overflow, flow = self.DualStep(X, R, stepsize / (i+1)**0.5)
 
             lagrangian, obj = self.FW.obj(X, R, self.Dual)
             print(i, self.Dual, lagrangian)
-            result.append((i, X, R, overflow, copy.deepcopy(self.Dual), lagrangian, obj))
+            result.append((i, X, R, overflow, flow, lagrangian, obj))
         return result
 
 
@@ -169,7 +169,7 @@ if __name__ == '__main__':
 
     args.debug_level = eval("logging." + args.debug_level)
     logging.basicConfig(level=args.debug_level)
-    dir = "INPUT%d/" % (args.bandwidth_type)
+    dir = "INPUT%d/" % (args.bandwidth_type + 3)
     input = dir + args.inputfile + "_%s_%ditems_%dnodes_%dquerynodes_%ddemands_%dcapcity_%fbandwidth" % (
         args.graph_type, args.catalog_size, args.graph_size, args.query_nodes, args.demand_size,
         args.max_capacity, args.bandwidth_coefficient)
