@@ -248,7 +248,7 @@ class GradientSolver:
             top_capacity = {}
             row.sort(key = lambda x: x[1], reverse = True)
             K = 0
-            while capacity:
+            while capacity and K < len(row):  # in case capacity is larger than catalog
                 key = row[K][0]
                 if capacity >= 1.0:
                     top_capacity[key] = 1.0

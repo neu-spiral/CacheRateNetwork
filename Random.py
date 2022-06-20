@@ -87,7 +87,7 @@ if __name__ == '__main__':
                         choices=['erdos_renyi', 'balanced_tree', 'hypercube', "cicular_ladder", "cycle",
                                  "grid_2d", 'lollipop', 'expander', 'hypercube', 'star', 'barabasi_albert',
                                  'watts_strogatz', 'regular', 'powerlaw_tree', 'small_world', 'geant',
-                                 'abilene', 'dtelekom', 'servicenetwork', 'example1', 'example2', 'abilene2'])
+                                 'abilene', 'dtelekom', 'servicenetwork', 'example1', 'example2', 'abilene2', 'real'])
     parser.add_argument('--catalog_size', default=100, type=int, help='Catalog size')
     parser.add_argument('--graph_size', default=100, type=int, help='Network size')
     parser.add_argument('--query_nodes', default=10, type=int, help='Number of nodes generating queries')
@@ -104,7 +104,7 @@ if __name__ == '__main__':
 
     args.debug_level = eval("logging." + args.debug_level)
     logging.basicConfig(level=args.debug_level)
-    dir = "INPUT%d/" % (args.bandwidth_type)
+    dir = "INPUT%d/" % (args.bandwidth_type + 3)
     input = dir + args.inputfile + "_%s_%ditems_%dnodes_%dquerynodes_%ddemands_%dcapcity_%fbandwidth" % (
         args.graph_type, args.catalog_size, args.graph_size, args.query_nodes, args.demand_size,
         args.max_capacity, args.bandwidth_coefficient)
@@ -113,7 +113,7 @@ if __name__ == '__main__':
 
     CR = CacheRoute(P)
     result = CR.alg()
-    dir = "Random%d/CacheRoute/" % (args.bandwidth_type)
+    dir = "Random%d/CacheRoute/" % (args.bandwidth_type + 3)
     if not os.path.exists(dir):
         os.makedirs(dir)
     fname = dir + "%s_%ditems_%dnodes_%dquerynodes_%ddemands_%dcapcity_%fbandwidth" % (
@@ -125,7 +125,7 @@ if __name__ == '__main__':
 
     RC = RouteCache(P)
     result = RC.alg()
-    dir = "Random%d/RouteCache/" % (args.bandwidth_type)
+    dir = "Random%d/RouteCache/" % (args.bandwidth_type + 3)
     if not os.path.exists(dir):
         os.makedirs(dir)
     fname = dir + "%s_%ditems_%dnodes_%dquerynodes_%ddemands_%dcapcity_%fbandwidth" % (

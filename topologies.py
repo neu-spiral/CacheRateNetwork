@@ -1,5 +1,5 @@
 from networkx import Graph
-
+import pickle
 
 def Dtelekom():
     G = Graph()
@@ -574,3 +574,13 @@ def example1_demands():
                (1, "node7"): {0: ["node7", "node4", "node2"], 1: ["node7", "node5", "node2"]}
                }
     return demands
+
+
+def Real(capacities, bandwidths):
+    G = Graph()
+
+    G.add_nodes_from(capacities.keys())
+    G.add_edges_from(bandwidths.keys())
+    return G
+
+

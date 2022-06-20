@@ -1,6 +1,6 @@
 from ProbGenerate import Problem, Demand
 from GradientSolver import FrankWolfe
-from helpers import succFun, Dependencies
+from helpers import succFun, Dependencies, pp
 import logging, argparse
 import pickle
 import os, time
@@ -71,8 +71,8 @@ class PrimalDual:
             # print(flow[e], self.bandwidths[e])
             if self.Dual[e] < 0:
                 self.Dual[e] = 0
-            # overflow[e] /= self.bandwidths[e]
-        return overflow, flow
+            overflow[e] /= self.bandwidths[e]
+        return overflow
 
     # def DualStep_momentum(self, X, R, stepsize):
     #     # calculate flow over each edge
@@ -111,7 +111,7 @@ class PrimalDual:
     #             temp_Dual = 0
     #         self.Dual_old[e], self.Dual[e] = self.Dual[e], temp_Dual
     #         overflow[e] /= self.bandwidths[e]
-    #     return overflow, flow
+    #     return overflow
 
     def adapt(self, X_new, X_old, smooth):
         '''Adapt solution combined with old solution'''
@@ -128,16 +128,16 @@ class PrimalDual:
             X, R = self.FW.alg(iterations=100, Dual=self.Dual, dependencies=dependencies)
 
             # smooth result
-            smooth = 2 / (i + 2)
-            # smooth = 1
+            # smooth = 2 / (i + 2)
+            smooth = 1
             self.adapt(X, self.X, smooth)
             self.adapt(R, self.R, smooth)
 
-            overflow, flow = self.DualStep(X, R, stepsize / (i+1)**0.5)
+            overflow = self.DualStep(X, R, stepsize / (i+1)**0.5)
 
             lagrangian, obj = self.FW.obj(X, R, self.Dual)
-            print(i, self.Dual, lagrangian)
-            result.append((i, X, R, overflow, flow, lagrangian, obj))
+            logging.info(pp([i, sum(self.Dual.values()), sum(overflow.values()), lagrangian]))
+            result.append((i, X, R, overflow, copy.deepcopy(self.Dual), lagrangian, obj))
         return result
 
 
@@ -150,7 +150,7 @@ if __name__ == '__main__':
                         choices=['erdos_renyi', 'balanced_tree', 'hypercube', "cicular_ladder", "cycle",
                                  "grid_2d", 'lollipop', 'expander', 'hypercube', 'star', 'barabasi_albert',
                                  'watts_strogatz', 'regular', 'powerlaw_tree', 'small_world', 'geant',
-                                 'abilene', 'dtelekom', 'servicenetwork', 'example1', 'example2', 'abilene2'])
+                                 'abilene', 'dtelekom', 'servicenetwork', 'example1', 'example2', 'abilene2', 'real'])
     parser.add_argument('--catalog_size', default=100, type=int, help='Catalog size')
     parser.add_argument('--graph_size', default=100, type=int, help='Network size')
     parser.add_argument('--query_nodes', default=10, type=int, help='Number of nodes generating queries')
@@ -181,7 +181,7 @@ if __name__ == '__main__':
     #     dir = "OUTPUT6/"
     # else:
     #     dir = "OUTPUT%d/" % (args.bandwidth_type+6)
-    dir = "OUTPUT%d/" % (args.bandwidth_type + 9)
+    dir = "OUTPUT%d/" % (args.bandwidth_type + 12)
 
     if not os.path.exists(dir):
         os.mkdir(dir)

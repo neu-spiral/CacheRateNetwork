@@ -30,10 +30,11 @@ if __name__ == "__main__":
 
     args.debug_level = eval("logging." + args.debug_level)
     logging.basicConfig(level=args.debug_level)
-    if args.bandwidth_type == 1:
-        dir = "OUTPUT6/"
-    else:
-        dir = "OUTPUT%d/" % (args.bandwidth_type+6)
+    # if args.bandwidth_type == 1:
+    #     dir = "OUTPUT6/"
+    # else:
+    #     dir = "OUTPUT%d/" % (args.bandwidth_type+6)
+    dir = "OUTPUT%d/" % (args.bandwidth_type + 9)
     fname = dir + "%s_%ditems_%dnodes_%dquerynodes_%ddemands_%dcapcity_%fbandwidth_%dstepsize" % (
         args.graph_type, args.catalog_size, args.graph_size, args.query_nodes, args.demand_size, args.max_capacity,
         args.bandwidth_coefficient, args.stepsize)
@@ -73,29 +74,45 @@ if __name__ == "__main__":
         else:
             NumNonzeroFlows.append(0)
 
-    fig, ax = plt.subplots(nrows=4, ncols=1)
+    # fig, ax = plt.subplots(nrows=4, ncols=1)
+    #
+    # ax[0].plot(iterations, SumDuals, label='SumDual')
+    # ax[0].legend()
+    # ax[1].plot(iterations, lagrangians, label='L')
+    # ax[1].plot(iterations, objs, label='Obj')
+    # ax[1].legend()
+    # ax[2].plot(iterations, SumFlows, label='SumOverflow')
+    # ax[2].plot(iterations, MaxFlows, label='MaxOverflow')
+    # if min(SumFlows) < 1:
+    #     ax[2].set_ylim([-0.05, 1])
+    # ax[2].legend()
+    # ax[3].plot(iterations, NumActiveFlows, label='NumActiveflow')
+    # ax[3].plot(iterations, NumNonzeroFlows, label='NumNonzeroFlows')
+    #
+    # ax[3].set_title(str(len(overflow)))
+    # ax[3].legend()
 
-    ax[0].plot(iterations, SumDuals, label='SumDual')
-    ax[0].legend()
-    ax[1].plot(iterations, lagrangians, label='L')
-    ax[1].plot(iterations, objs, label='Obj')
-    ax[1].legend()
-    ax[2].plot(iterations, SumFlows, label='SumOverflow')
-    ax[2].plot(iterations, MaxFlows, label='MaxOverflow')
-    if min(SumFlows) < 1:
-        ax[2].set_ylim([-0.05, 1])
-    ax[2].legend()
-    ax[3].plot(iterations, NumActiveFlows, label='NumActiveflow')
-    ax[3].plot(iterations, NumNonzeroFlows, label='NumNonzeroFlows')
+    fig, ax = plt.subplots(nrows=2, ncols=1)
+    fig.set_size_inches(5, 7)
+    ax[0].plot(iterations, lagrangians, label='L')
+    ax[0].plot(iterations, objs, '-.', label='Obj')
+    ax[0].legend(loc='upper center', bbox_to_anchor=(0.5, 1.1), fontsize=13)
+    violations = np.array(SumFlows) / np.array(NumNonzeroFlows)
+    violations_max = np.array(MaxFlows) / np.array(NumNonzeroFlows)
+    ax[1].plot(iterations, violations, label='SumOverflow')
+    ax[1].plot(iterations, violations_max, '-.', label='MaxOverflow')
+    ax[1].legend(loc='upper center', bbox_to_anchor=(0.5, 1.1), fontsize=13)
 
-    ax[3].set_title(str(len(overflow)))
-    ax[3].legend()
-
-
+    plt.tick_params(labelsize=10)
+    ax[0].set_ylabel('Cache Gain', fontsize=15)
+    ax[0].set_xlabel('Iterations', fontsize=15)
+    ax[1].set_ylabel('Overflow', fontsize=15)
+    ax[1].set_xlabel('Iterations', fontsize=15)
     plt.tight_layout()
+    ax[0].ticklabel_format(axis='y', style='sci', scilimits=(0, 0))
+    ax[0].ticklabel_format(axis='y', style='sci', scilimits=(0, 0))
 
-    # plt.legend(labels=['NormDual', 'Lagrangian'])
     plt.show()
     logging.info('Plot ' + fname)
 
-    fig.savefig(fname + '.pdf')
+    fig.savefig(fname + '.pdf', bbox_inches = 'tight')

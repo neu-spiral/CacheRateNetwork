@@ -1,12 +1,13 @@
 import matplotlib.pyplot as plt
 import logging, argparse
 import pickle
+import numpy as np
 
 bandwidth_coefficients = [1, 1.5, 2, 2.5, 3]
 algorithm = ['PrimalDual', 'Greedy1', 'Greedy2', 'Random1', 'Random2', 'Heuristic']
-Dirs = {1: ["OUTPUT6/", "Greedy1/CacheRoute/", "Greedy1/RouteCache/", "Random1/CacheRoute/", "Random1/RouteCache/", "Heuristic1/"],
-        2: ["OUTPUT8/", "Greedy2/CacheRoute/", "Greedy2/RouteCache/", "Random2/CacheRoute/", "Random2/RouteCache/", "Heuristic2/"],
-        3: ["OUTPUT9/", "Greedy3/CacheRoute/", "Greedy3/RouteCache/", "Random3/CacheRoute/", "Random3/RouteCache/", "Heuristic3/"]}
+Dirs = {1: ["OUTPUT10/", "Greedy1/CacheRoute/", "Greedy1/RouteCache/", "Random1/CacheRoute/", "Random1/RouteCache/", "Heuristic1/"],
+        2: ["OUTPUT11/", "Greedy2/CacheRoute/", "Greedy2/RouteCache/", "Random2/CacheRoute/", "Random2/RouteCache/", "Heuristic2/"],
+        3: ["OUTPUT12/", "Greedy3/CacheRoute/", "Greedy3/RouteCache/", "Random3/CacheRoute/", "Random3/RouteCache/", "Heuristic3/"]}
 
 colors = ['r', 'sandybrown', 'gold', 'darkseagreen', 'c', 'dodgerblue', 'm']
 line_styles = ['s-', '*-', 'd--', '^-', 'v-', '.:']
@@ -48,7 +49,7 @@ if __name__ == '__main__':
                         choices=['erdos_renyi', 'balanced_tree', 'hypercube', "cicular_ladder", "cycle",
                                  "grid_2d", 'lollipop', 'expander', 'hypercube', 'star', 'barabasi_albert',
                                  'watts_strogatz', 'regular', 'powerlaw_tree', 'small_world', 'geant',
-                                 'abilene', 'dtelekom', 'servicenetwork', 'example1', 'example2', 'abilene2'])
+                                 'abilene', 'dtelekom', 'servicenetwork', 'example1', 'example2', 'abilene2', 'real'])
     parser.add_argument('--catalog_size', default=100, type=int, help='Catalog size')
     parser.add_argument('--graph_size', default=100, type=int, help='Network size')
     parser.add_argument('--query_nodes', default=10, type=int, help='Number of nodes generating queries')
@@ -80,7 +81,35 @@ if __name__ == '__main__':
 
         fname = Dir[0] + fname1
         result = readresult(fname)
-        result = result[-1][-1]
+
+        '''calculate violation'''
+        SumFlows = []
+        NumNonzeroFlows = []
+        iterations, Xs, Rs, overflows, Duals, lagrangians, objs = zip(*result)
+        for overflow in overflows:
+            ActiveFlow = []
+            Flow = []
+            for e in overflow:
+                if overflow[e] > 0:  # violated flow
+                    ActiveFlow.append(overflow[e])
+                if overflow[e] > -1:  # non zero flow
+                    Flow.append(overflow[e])
+            if ActiveFlow:
+                SumFlows.append(sum(ActiveFlow))
+            else:
+                SumFlows.append(0)
+            if Flow:
+                NumNonzeroFlows.append(len(Flow))
+            else:
+                NumNonzeroFlows.append(0)
+        vios = np.array(SumFlows) / np.array(NumNonzeroFlows)
+        vio_min = min(vios)
+
+        '''obj'''
+        result = 0
+        for i in range(len(objs)):
+            if vios[i] == vio_min:
+                result = max(result, objs[i])
         obj[algorithm[0]].append(result)
 
         for i in range(1, len(algorithm)-1):
