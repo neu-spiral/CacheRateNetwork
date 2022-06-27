@@ -1,6 +1,6 @@
 from ProbGenerate import Problem, Demand
 from GradientSolver import FrankWolfe
-from helpers import succFun, Dependencies, pp
+from helpers import succFun, Dependencies, pp, overflows
 import logging, argparse
 import pickle
 import os, time
@@ -38,30 +38,8 @@ class PrimalDual:
 
     def DualStep(self, X, R, stepsize):
         # calculate flow over each edge
-        flow = {}
+        flow, violation = overflows(X, R, self.demands, self.bandwidths)
         overflow = {}
-        for d in R:
-            item = self.demands[d].item
-            rate = self.demands[d].rate
-            paths = self.demands[d].routing_info['paths']
-
-
-            for path_id in R[d]:
-                path = paths[path_id]
-                prob = R[d][path_id]
-                x = self.demands[d].query_source
-                s = succFun(x, path)
-                prodsofar = (1 - prob) * (1 - X[x][item])
-
-                while s is not None:
-                    if (s, x) in flow:
-                        flow[(s, x)] += prodsofar * rate
-                    else:
-                        flow[(s, x)] = prodsofar * rate
-                    x = s
-                    s = succFun(x, path)
-                    prodsofar *= (1 - X[x][item])
-
         for e in flow:
             overflow[e] = flow[e] - self.bandwidths[e]
             # if overflow[e] < 0:
@@ -71,8 +49,7 @@ class PrimalDual:
             # print(flow[e], self.bandwidths[e])
             if self.Dual[e] < 0:
                 self.Dual[e] = 0
-            overflow[e] /= self.bandwidths[e]
-        return overflow
+        return violation
 
     # def DualStep_momentum(self, X, R, stepsize):
     #     # calculate flow over each edge
@@ -147,10 +124,10 @@ if __name__ == '__main__':
     parser.add_argument('inputfile', help='Output file')
 
     parser.add_argument('--graph_type', default="erdos_renyi", type=str, help='Graph type',
-                        choices=['erdos_renyi', 'balanced_tree', 'hypercube', "cicular_ladder", "cycle",
-                                 "grid_2d", 'lollipop', 'expander', 'hypercube', 'star', 'barabasi_albert',
-                                 'watts_strogatz', 'regular', 'powerlaw_tree', 'small_world', 'geant',
-                                 'abilene', 'dtelekom', 'servicenetwork', 'example1', 'example2', 'abilene2', 'real'])
+                        choices=['erdos_renyi', 'balanced_tree', 'hypercube', "cicular_ladder", "cycle", "grid_2d",
+                                 'lollipop', 'expander', 'star', 'barabasi_albert', 'watts_strogatz',
+                                 'regular', 'powerlaw_tree', 'small_world', 'geant', 'abilene', 'dtelekom',
+                                 'servicenetwork', 'example1', 'example2', 'abilene1', 'abilene2', 'real1', 'real2'])
     parser.add_argument('--catalog_size', default=100, type=int, help='Catalog size')
     parser.add_argument('--graph_size', default=100, type=int, help='Network size')
     parser.add_argument('--query_nodes', default=10, type=int, help='Number of nodes generating queries')
@@ -169,7 +146,7 @@ if __name__ == '__main__':
 
     args.debug_level = eval("logging." + args.debug_level)
     logging.basicConfig(level=args.debug_level)
-    dir = "INPUT%d/" % (args.bandwidth_type + 3)
+    dir = "INPUT%d/" % (args.bandwidth_type)
     input = dir + args.inputfile + "_%s_%ditems_%dnodes_%dquerynodes_%ddemands_%dcapcity_%fbandwidth" % (
         args.graph_type, args.catalog_size, args.graph_size, args.query_nodes, args.demand_size,
         args.max_capacity, args.bandwidth_coefficient)
@@ -177,11 +154,7 @@ if __name__ == '__main__':
     logging.info('Read data from ' + input)
     PD = PrimalDual(P)
     result = PD.alg(args.iterations, args.stepsize)
-    # if args.bandwidth_type == 1:
-    #     dir = "OUTPUT6/"
-    # else:
-    #     dir = "OUTPUT%d/" % (args.bandwidth_type+6)
-    dir = "OUTPUT%d/" % (args.bandwidth_type + 12)
+    dir = "OUTPUT%d/" % (args.bandwidth_type + 3)
 
     if not os.path.exists(dir):
         os.mkdir(dir)

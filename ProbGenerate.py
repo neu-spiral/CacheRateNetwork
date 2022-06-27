@@ -83,7 +83,7 @@ def main():
                         choices=['erdos_renyi', 'balanced_tree', 'hypercube', "cicular_ladder", "cycle", "grid_2d",
                                  'lollipop', 'expander', 'star', 'barabasi_albert', 'watts_strogatz',
                                  'regular', 'powerlaw_tree', 'small_world', 'geant', 'abilene', 'dtelekom',
-                                 'servicenetwork', 'example1', 'example2', 'abilene2', 'real'])
+                                 'servicenetwork', 'example1', 'example2', 'abilene1', 'abilene2', 'real1', 'real2'])
     parser.add_argument('--graph_size', default=100, type=int, help='Network size')
     parser.add_argument('--graph_degree', default=3, type=int,
                         help='Degree. Used by balanced_tree, regular, barabasi_albert, watts_strogatz')
@@ -141,7 +141,7 @@ def main():
             return topologies.GEANT()
         if args.graph_type == 'dtelekom':
             return topologies.Dtelekom()
-        if args.graph_type == 'abilene' or args.graph_type == 'abilene2':
+        if args.graph_type == 'abilene1' or args.graph_type == 'abilene2' or args.graph_type == 'abilene':
             return topologies.Abilene()
         if args.graph_type == 'servicenetwork':
             return topologies.ServiceNetwork()
@@ -150,10 +150,14 @@ def main():
 
     construct_stats = {}
     logging.info('Generating graph and weights...')
-    fname = 'real_5000'
-    with open(fname, 'rb') as f:
-        (capacities_real, bandwidths_real, traces_real, catalog_real, query_nodes_real) = pickle.load(f)
-    if args.graph_type == 'real':
+    if args.graph_type == 'real1' or args.graph_type == 'real2':
+        if args.graph_type == 'real1':
+            fname = 'real_2000'
+        elif args.graph_type == 'real2':
+            fname = 'real_5000'
+        with open(fname, 'rb') as f:
+            (capacities_real, bandwidths_real, traces_real, catalog_real, query_nodes_real) = pickle.load(f)
+    if args.graph_type == 'real1' or args.graph_type == 'real2':
         temp_graph = topologies.Real(capacities_real, bandwidths_real)
     else:
         temp_graph = graphGenerator()
@@ -175,8 +179,8 @@ def main():
             weights[(yy, xx)] = weights[(xx, yy)]
             G[xx][yy]['weight'] = weights[(xx, yy)]
             G[yy][xx]['weight'] = weights[(yy, xx)]
-    elif args.graph_type == 'abilene' or args.graph_type == 'abilene2':
-        abilene_weights = topologies.Abilene_weights(100)
+    elif args.graph_type == 'abilene1' or args.graph_type == 'abilene2':
+        abilene_weights = topologies.Abilene1_weights(100)
         for (x, y) in temp_graph.edges():
             xx = number_map[x]
             yy = number_map[y]
@@ -206,9 +210,9 @@ def main():
     logging.info('Generating item sources...')
     if args.graph_type == 'example1' or args.graph_type == 'example2':
         item_sources = {0: [number_map['node1']], 1: [number_map['node2']]}
-    elif args.graph_type == 'abilene' or args.graph_type == 'abilene2':
+    elif args.graph_type == 'abilene1' or args.graph_type == 'abilene2':
         item_sources = {0: [number_map['DENV']], 1: [number_map['DENV']], 2: [number_map['CHIC']], 3: [number_map['CHIC']]}
-    elif args.graph_type == 'real':
+    elif args.graph_type == 'real1' or args.graph_type == 'real2':
         item_sources = dict((item, [list(G.nodes())[source]]) for item, source in
                             zip(catalog_real, np.random.choice(range(graph_size), len(catalog_real))))
     else:
@@ -224,9 +228,9 @@ def main():
     logging.info('Generating query node list...')
     if args.graph_type == 'example1' or args.graph_type == 'example2':
         query_node_list = [number_map['node6'], number_map['node7']]
-    elif args.graph_type == 'abilene' or args.graph_type == 'abilene2':
+    elif args.graph_type == 'abilene1' or args.graph_type == 'abilene2':
         query_node_list = [number_map['HOUS'], number_map['ATLA'], number_map['LOSA']]
-    elif args.graph_type == 'real':
+    elif args.graph_type == 'real1' or args.graph_type == 'real2':
         query_node_list = [number_map[i] for i in query_nodes_real]
     else:
         query_node_list = [list(G.nodes())[i] for i in random.sample(range(graph_size), args.query_nodes)]
@@ -236,11 +240,11 @@ def main():
 
     logging.info('Generating demands...')
     demands = []
-    if args.graph_type == 'example1' or args.graph_type == 'example2' or args.graph_type == 'abilene' or args.graph_type == 'abilene2':
+    if args.graph_type == 'example1' or args.graph_type == 'example2' or args.graph_type == 'abilene1' or args.graph_type == 'abilene2':
         if args.graph_type == 'example1' or args.graph_type == 'example2':
             example_demands = topologies.example1_demands()
         else:
-            example_demands = topologies.Abilene_demands()
+            example_demands = topologies.Abilene1_demands()
         rate = args.rate
         for (item, x) in example_demands:
             paths = example_demands[(item, x)]
@@ -257,37 +261,37 @@ def main():
             new_demand = Demand(item, x, rate, routing_info=routing_info)
             demands.append(new_demand)
             logging.debug(pp(['Generated demand', new_demand]))
-    elif args.graph_type == 'real':
-        i = 0
+    elif args.graph_type == 'real1' or args.graph_type == 'real2':
+        counter = 0
+        rate_max = max(traces_real.values())
         for item, x in traces_real:
-            i += 1
-            rate = traces_real[item, x] / 10
+            rate = traces_real[(item, x)] / rate_max
             x = number_map[x]
             paths, distances = generatePaths(G, x, item_sources[item][0], cutoff=args.max_paths, stretch=args.path_stretch)
             logging.debug(pp(['Generated ', len(paths), 'paths for new demand', (item, x, rate)]))
             if len(paths) == 0:
-                logging.warning(pp([i, ' No paths exist for new demand', (item, x, rate), 'with target', item_sources[item][0],
+                logging.warning(pp([counter, ' No paths exist for new demand', (item, x, rate), 'with target', item_sources[item][0],
                                     ', this demand will be dropped']))
                 continue
             routing_info = {'paths': paths, 'distances': distances}
             new_demand = Demand(item, x, rate, routing_info=routing_info)
             demands.append(new_demand)
+            logging.debug(pp(['Generated demand', new_demand]))
+            counter += 1
     else:
         if args.demand_distribution == 'powerlaw':
             factor = lambda i: (1.0 + i) ** (-args.powerlaw_exp)
         else:
-            factor = lambda i: 1.0
-        # normalizing constant so that average rate per demand is args.rate
-        constant = args.rate * args.demand_size / sum((factor(i) for i in range(args.demand_size)))
+            factor = lambda i: random.random()
         all_demands = [(x, item) for x in query_node_list for item in range(args.catalog_size)]
         if args.demand_size > len(all_demands):
-            demand_pairs = [random.choice(all_demands) for i in range(args.demand_size)]
+            demand_pairs = all_demands + random.choices(all_demands, k = args.demand_size - len(all_demands))
         else:
             demand_pairs = random.sample(all_demands, args.demand_size)
 
         counter = 0
         for x, item in demand_pairs:
-            rate = constant * factor(counter)
+            rate = factor(counter)
             paths, distances = generatePaths(G, x, item_sources[item][0], cutoff=args.max_paths, stretch=args.path_stretch)
             logging.debug(pp(['Generated ', len(paths), 'paths for new demand', (item, x, rate)]))
             if len(paths) == 0:
@@ -304,20 +308,26 @@ def main():
     construct_stats['demands'] = len(demands)
 
     logging.info('Generating capacities...')
-    if args.graph_type == 'example1' or args.graph_type == 'example2' or args.graph_type == 'abilene' \
-            or args.graph_type == 'abilene2' or args.graph_type == 'real':
+    if args.graph_type == 'example1' or args.graph_type == 'example2' or args.graph_type == 'abilene1' \
+            or args.graph_type == 'abilene2':
         if args.graph_type == 'example1' or args.graph_type == 'example2':
             example_capacities = topologies.example1_capacities()
-        elif args.graph_type == 'abilene':
-            example_capacities = topologies.Abilene_capacities()
+        elif args.graph_type == 'abilene1':
+            example_capacities = topologies.Abilene1_capacities()
         elif args.graph_type == 'abilene2':
             example_capacities = topologies.Abilene2_capacities()
-        else:
-            example_capacities = capacities_real
 
         capacities = dict((x, 0) for x in G.nodes())
         for node in example_capacities:
-            capacities[number_map[node]] = example_capacities[node] / args.bandwidth_coefficient
+            capacities[number_map[node]] = example_capacities[node]
+    elif args.graph_type == 'real1':
+        capacities = {}
+        for node in capacities_real:
+            capacities[number_map[node]] = capacities_real[node] / 4
+    elif args.graph_type == 'real2':
+        capacities = {}
+        for node in capacities_real:
+            capacities[number_map[node]] = capacities_real[node] / 2
     else:
         capacities = dict((x, random.randint(args.min_capacity, args.max_capacity)) for x in G.nodes())
     logging.info('...done. Generated %d caches' % len(capacities))
@@ -339,9 +349,9 @@ def main():
             yy = number_map[y]
             bandwidths[(xx, yy)] = example_bandwidths[(x, y)] * args.bandwidth_coefficient
             bandwidths[(yy, xx)] = bandwidths[(xx, yy)]
-    elif args.graph_type == 'abilene' or args.graph_type == 'abilene2':
-        if args.graph_type == 'abilene':
-            abilene_bandwidths = topologies.Abilene_bandwidths(0.1, 100)
+    elif args.graph_type == 'abilene1' or args.graph_type == 'abilene2':
+        if args.graph_type == 'abilene1':
+            abilene_bandwidths = topologies.Abilene1_bandwidths(0.1, 100)
         elif args.graph_type == 'abilene2':
             abilene_bandwidths = topologies.Abilene2_bandwidths(0.1, 100)
         for (x, y) in temp_graph.edges():
@@ -351,11 +361,11 @@ def main():
                 bandwidths[(yy, xx)] = abilene_bandwidths[(x, y)] * args.bandwidth_coefficient
             if (y, x) in abilene_bandwidths:
                 bandwidths[(xx, yy)] = abilene_bandwidths[(y, x)] * args.bandwidth_coefficient
-    elif args.graph_type == 'real':
+    elif args.graph_type == 'real1' or args.graph_type == 'real2':
         for (x, y) in temp_graph.edges():
             xx = number_map[x]
             yy = number_map[y]
-            bandwidths[(xx, yy)] = bandwidths_real[(x, y)] * args.bandwidth_coefficient / 60 / args.bandwidth_coefficient
+            bandwidths[(xx, yy)] = bandwidths_real[(x, y)] * args.bandwidth_coefficient / rate_max / 30 * args.bandwidth_coefficient
             bandwidths[(yy, xx)] = bandwidths[(xx, yy)]
     else:
         '''Random Cache'''
@@ -419,7 +429,7 @@ def main():
 
     ''' pack the graph, capacity for each node, attributes of each demands(requests), bandwidth for each edge '''
     pr = Problem(G, capacities, bandwidths, demands, weights)
-    dir = "INPUT%d/" % (args.bandwidth_type + 3)
+    dir = "INPUT%d/" % (args.bandwidth_type)
     if not os.path.exists(dir):
         os.mkdir(dir)
     out = dir + args.outputfile + "_%s_%ditems_%dnodes_%dquerynodes_%ddemands_%dcapcity_%fbandwidth" % (

@@ -384,27 +384,27 @@ def Abilene():
     G.add_edge("DENV", "SEAT")
     return G
 
-def Abilene_weights(M):
+def Abilene1_weights(M):
     weights = {("LOSA", "HOUS"): 1, ("HOUS", "ATLA"): 1, ("ATLA", "WASH"): M, ("WASH", "NEWY"): M, ("NEWY", "CHIC"): M,
-               ("ATLA", "INDI"): M, ("INDI", "CHIC"): M, ("HOUS", "KANS"): 1, ("KANS", "INDI"): 1,
+               ("INDI", "CHIC"): M, ("HOUS", "KANS"): 1, ("KANS", "INDI"): 1,
                ("ATLA", "HOUS"): 1, ("HOUS", "LOSA"): 1, ("LOSA", "SUNN"): M, ("SUNN", "SEAT"): M, ("SEAT", "DENV"): M,
                ("SUNN", "DENV"): M, ("ATLA", "INDI"): 1, ("INDI", "KANS"): 1, ("KANS", "DENV"): M}
     return weights
 
 
-def Abilene_capacities():
+def Abilene1_capacities():
     capacities = {"ATLA": 1, "KANS": 1, "SUNN": 1}
     return capacities
 
 
 def Abilene2_capacities():
-    capacities = {"ATLA": 1, "KANS": 2, "SUNN": 1}
+    capacities = {"ATLA": 1, "KANS": 1, "SUNN": 1}
     return capacities
 
 
-def Abilene_bandwidths(epsilon, inf):
+def Abilene1_bandwidths(epsilon, inf):
     bandwidths = {("LOSA", "HOUS"): inf, ("HOUS", "ATLA"): inf, ("ATLA", "WASH"): inf, ("WASH", "NEWY"): inf,
-                  ("NEWY", "CHIC"): inf, ("ATLA", "INDI"): epsilon, ("INDI", "CHIC"): 5*epsilon, ("HOUS", "KANS"): inf,
+                  ("NEWY", "CHIC"): inf, ("INDI", "CHIC"): 5*epsilon, ("HOUS", "KANS"): inf,
                   ("KANS", "INDI"): inf,
                   ("ATLA", "HOUS"): inf, ("HOUS", "LOSA"): inf, ("LOSA", "SUNN"): inf, ("SUNN", "SEAT"): inf,
                   ("SEAT", "DENV"): inf,
@@ -414,7 +414,7 @@ def Abilene_bandwidths(epsilon, inf):
 
 def Abilene2_bandwidths(epsilon, inf):
     bandwidths = {("LOSA", "HOUS"): inf, ("HOUS", "ATLA"): inf, ("ATLA", "WASH"): inf, ("WASH", "NEWY"): inf,
-                  ("NEWY", "CHIC"): inf, ("ATLA", "INDI"): epsilon, ("INDI", "CHIC"): inf, ("HOUS", "KANS"): inf,
+                  ("NEWY", "CHIC"): inf, ("INDI", "CHIC"): inf, ("HOUS", "KANS"): inf,
                   ("KANS", "INDI"): inf,
                   ("ATLA", "HOUS"): inf, ("HOUS", "LOSA"): inf, ("LOSA", "SUNN"): inf, ("SUNN", "SEAT"): inf,
                   ("SEAT", "DENV"): inf,
@@ -422,7 +422,7 @@ def Abilene2_bandwidths(epsilon, inf):
     return bandwidths
 
 
-def Abilene_demands():
+def Abilene1_demands():
     """(item, query node): path dictionary"""
     demands = {(0, "HOUS"): {0: ["HOUS", "LOSA", "SUNN", "SEAT", "DENV"]},
                (1, "ATLA"): {0: ["ATLA", "HOUS", "LOSA", "SUNN", "DENV"], 1: ["ATLA", "INDI", "KANS", "DENV"]},

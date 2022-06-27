@@ -1,7 +1,7 @@
 from ProbGenerate import Problem, Demand
 from Route import OptimalRouting
 import logging, argparse, pickle, os
-from helpers import succFun, Dependencies
+from helpers import succFun, Dependencies, overflows
 import cvxpy as cp
 
 
@@ -91,8 +91,9 @@ class CacheRoute(Greedy):
 
         if R:
             obj = self.obj(X, R)
+            flow, overflow = overflows(X, R, self.demands, self.bandwidths)
             print('CacheRoute', obj)
-            return (X, R, obj)
+            return (X, R, overflow, obj)
         else:
             print('CacheRoute: infeasible')
             return (X, R, 0)
@@ -112,10 +113,10 @@ class RouteCache(Greedy):
         R = self.OptimalRoute(X)
         if R:
             X = self.GreedyCache(R, dependencies)
-
             obj = self.obj(X, R)
+            flow, overflow = overflows(X, R, self.demands, self.bandwidths)
             print('RouteCache', obj)
-            return (X, R, obj)
+            return (X, R, overflow, obj)
         else:
             print('RouteCache: infeasible')
             return (X, R, 0)
@@ -127,10 +128,10 @@ if __name__ == '__main__':
     parser.add_argument('inputfile', help='Output file')
 
     parser.add_argument('--graph_type', default="erdos_renyi", type=str, help='Graph type',
-                        choices=['erdos_renyi', 'balanced_tree', 'hypercube', "cicular_ladder", "cycle",
-                                 "grid_2d", 'lollipop', 'expander', 'hypercube', 'star', 'barabasi_albert',
-                                 'watts_strogatz', 'regular', 'powerlaw_tree', 'small_world', 'geant',
-                                 'abilene', 'dtelekom', 'servicenetwork', 'example1', 'example2', 'abilene2', 'real'])
+                        choices=['erdos_renyi', 'balanced_tree', 'hypercube', "cicular_ladder", "cycle", "grid_2d",
+                                 'lollipop', 'expander', 'star', 'barabasi_albert', 'watts_strogatz',
+                                 'regular', 'powerlaw_tree', 'small_world', 'geant', 'abilene', 'dtelekom',
+                                 'servicenetwork', 'example1', 'example2', 'abilene1', 'abilene2', 'real1', 'real2'])
     parser.add_argument('--catalog_size', default=100, type=int, help='Catalog size')
     parser.add_argument('--graph_size', default=100, type=int, help='Network size')
     parser.add_argument('--query_nodes', default=10, type=int, help='Number of nodes generating queries')
@@ -147,7 +148,7 @@ if __name__ == '__main__':
 
     args.debug_level = eval("logging." + args.debug_level)
     logging.basicConfig(level=args.debug_level)
-    dir = "INPUT%d/" % (args.bandwidth_type + 3)
+    dir = "INPUT%d/" % (args.bandwidth_type)
     input = dir + args.inputfile + "_%s_%ditems_%dnodes_%dquerynodes_%ddemands_%dcapcity_%fbandwidth" % (
         args.graph_type, args.catalog_size, args.graph_size, args.query_nodes, args.demand_size,
         args.max_capacity, args.bandwidth_coefficient)
@@ -156,7 +157,7 @@ if __name__ == '__main__':
 
     CR = CacheRoute(P)
     result = CR.alg()
-    dir = "Greedy%d/CacheRoute/" % (args.bandwidth_type + 3)
+    dir = "Greedy%d/CacheRoute/" % (args.bandwidth_type)
     if not os.path.exists(dir):
         os.makedirs(dir)
     fname = dir + "%s_%ditems_%dnodes_%dquerynodes_%ddemands_%dcapcity_%fbandwidth" % (
@@ -168,7 +169,7 @@ if __name__ == '__main__':
 
     RC = RouteCache(P)
     result = RC.alg()
-    dir = "Greedy%d/RouteCache/" % (args.bandwidth_type + 3)
+    dir = "Greedy%d/RouteCache/" % (args.bandwidth_type)
     if not os.path.exists(dir):
         os.makedirs(dir)
     fname = dir + "%s_%ditems_%dnodes_%dquerynodes_%ddemands_%dcapcity_%fbandwidth" % (

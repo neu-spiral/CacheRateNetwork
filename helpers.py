@@ -206,6 +206,39 @@ def Dependencies(demands):
     return dependencies
 
 
+def overflows(X, R, demands, bandwidths):
+    """
+    calculate flow and violation over each edge
+    """
+    flow = {}
+    violation = {}
+    for d in R:
+        item = demands[d].item
+        rate = demands[d].rate
+        paths = demands[d].routing_info['paths']
+
+        for path_id in R[d]:
+            path = paths[path_id]
+            prob = R[d][path_id]
+            x = demands[d].query_source
+            s = succFun(x, path)
+            prodsofar = (1 - prob) * (1 - X[x][item])
+
+            while s is not None:
+                if (s, x) in flow:
+                    flow[(s, x)] += prodsofar * rate
+                else:
+                    flow[(s, x)] = prodsofar * rate
+                x = s
+                s = succFun(x, path)
+                prodsofar *= (1 - X[x][item])
+
+    for e in flow:
+        violation[e] = flow[e] - bandwidths[e]
+        violation[e] /= bandwidths[e]
+    return flow, violation
+
+
 if __name__ == "__main__":
     G = grid_2d_graph(50, 50)
     for e in G.edges():

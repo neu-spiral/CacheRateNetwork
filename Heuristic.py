@@ -1,6 +1,6 @@
 from ProbGenerate import Problem, Demand
 import logging, argparse, pickle, os, time
-from helpers import succFun, Dependencies
+from helpers import succFun, Dependencies, overflows
 from GradientSolver import FrankWolfe_cache
 from Route import OptimalRouting
 
@@ -42,9 +42,9 @@ class Heuristic:
             R = self.route.OptimalRoute(X)
             if R:
                 obj = self.route.obj(X, R)
-
+                flow, overflow = overflows(X, R, self.demands, self.bandwidths)
                 logging.info((t, obj))
-                result.append((X, R, obj))
+                result.append((X, R, overflow, obj))
             else:
                 logging.info('infeasible')
                 result.append((X, R, 0))
@@ -58,10 +58,10 @@ if __name__ == '__main__':
     parser.add_argument('inputfile', help='Output file')
 
     parser.add_argument('--graph_type', default="erdos_renyi", type=str, help='Graph type',
-                        choices=['erdos_renyi', 'balanced_tree', 'hypercube', "cicular_ladder", "cycle",
-                                 "grid_2d", 'lollipop', 'expander', 'hypercube', 'star', 'barabasi_albert',
-                                 'watts_strogatz', 'regular', 'powerlaw_tree', 'small_world', 'geant',
-                                 'abilene', 'dtelekom', 'servicenetwork', 'example1', 'example2', 'abilene2', 'real'])
+                        choices=['erdos_renyi', 'balanced_tree', 'hypercube', "cicular_ladder", "cycle", "grid_2d",
+                                 'lollipop', 'expander', 'star', 'barabasi_albert', 'watts_strogatz',
+                                 'regular', 'powerlaw_tree', 'small_world', 'geant', 'abilene', 'dtelekom',
+                                 'servicenetwork', 'example1', 'example2', 'abilene1', 'abilene2', 'real1', 'real2'])
     parser.add_argument('--catalog_size', default=100, type=int, help='Catalog size')
     parser.add_argument('--graph_size', default=100, type=int, help='Network size')
     parser.add_argument('--query_nodes', default=10, type=int, help='Number of nodes generating queries')
@@ -73,13 +73,13 @@ if __name__ == '__main__':
                         help='Type of generating bandwidth: 1. no cache, 2. uniform cache, 3. random integer cache')
     parser.add_argument('--debug_level', default='INFO', type=str, help='Debug Level',
                         choices=['INFO', 'DEBUG', 'WARNING', 'ERROR'])
-    parser.add_argument('--iterations', default=50, type=int, help='Iterations')
+    parser.add_argument('--iterations', default=25, type=int, help='Iterations')
 
     args = parser.parse_args()
 
     args.debug_level = eval("logging." + args.debug_level)
     logging.basicConfig(level=args.debug_level)
-    dir = "INPUT%d/" % (args.bandwidth_type + 3)
+    dir = "INPUT%d/" % (args.bandwidth_type)
     input = dir + args.inputfile + "_%s_%ditems_%dnodes_%dquerynodes_%ddemands_%dcapcity_%fbandwidth" % (
         args.graph_type, args.catalog_size, args.graph_size, args.query_nodes, args.demand_size,
         args.max_capacity, args.bandwidth_coefficient)
@@ -88,7 +88,7 @@ if __name__ == '__main__':
 
     heuristic = Heuristic(P)
     result = heuristic.alg(args.iterations)
-    dir = "Heuristic%d/" % (args.bandwidth_type + 3)
+    dir = "Heuristic%d/" % (args.bandwidth_type)
     if not os.path.exists(dir):
         os.mkdir(dir)
     fname = dir + "%s_%ditems_%dnodes_%dquerynodes_%ddemands_%dcapcity_%fbandwidth" % (
