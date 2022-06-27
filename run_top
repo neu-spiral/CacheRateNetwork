@@ -4,11 +4,11 @@ for type in 1 2 3
   do
   for bandwidth in 1 1.5 2 2.5 3
   do
-    for graph in grid_2d erdos_renyi hypercube balanced_tree small_world
-    do
-      sbatch ../script.sh ProbGenerate.py Prob --graph_type $graph --bandwidth_coefficient $bandwidth --bandwidth_type $type
-    done
-    for graph in geant dtelekom example1 example2 abilene abilene2
+#    for graph in grid_2d erdos_renyi hypercube balanced_tree small_world
+#    do
+#      sbatch ../script.sh ProbGenerate.py Prob --graph_type $graph --bandwidth_coefficient $bandwidth --bandwidth_type $type
+#    done
+    for graph in real1 real2 #abilene2 geant dtelekom example1 example2 abilene abilene1
     do
       sbatch ../script.sh ProbGenerate.py Prob --graph_type $graph --bandwidth_coefficient $bandwidth --query_nodes 4 --bandwidth_type $type
     done

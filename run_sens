@@ -2,11 +2,11 @@
 
 for type in 1 2 3
   do
-#  for graph in grid_2d erdos_renyi hypercube balanced_tree small_world
-#  do
-#    sbatch ../script.sh plot_sens.py --graph_type $graph --bandwidth_type $type
-#  done
-  for graph in geant dtelekom
+  for graph in grid_2d erdos_renyi hypercube balanced_tree small_world
+  do
+    sbatch ../script.sh plot_sens.py --graph_type $graph --bandwidth_type $type
+  done
+  for graph in geant dtelekom example1 example2 abilene1 abilene2 real1 real2
   do
     sbatch ../script.sh plot_sens.py --graph_type $graph --query_nodes 4 --bandwidth_type $type
   done

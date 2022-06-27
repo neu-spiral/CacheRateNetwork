@@ -1,44 +1,22 @@
 #! /bin/bash
 
-#sbatch ../script.sh plotter.py --graph_type grid_2d --graph_size 20 --catalog_size 10 --demand_size 100 --query_nodes 2  --bandwidth_coefficient 0.7 --stepsize 10
-#
-#sbatch ../script.sh plotter.py --graph_type grid_2d --graph_size 20 --catalog_size 10 --demand_size 100 --query_nodes 2  --bandwidth_coefficient 0.7 --stepsize 50
-#
-#sbatch ../script.sh plotter.py --graph_type grid_2d --graph_size 20 --catalog_size 10 --demand_size 100 --query_nodes 2  --bandwidth_coefficient 0.75 --stepsize 10
-#
-#sbatch ../script.sh plotter.py --graph_type grid_2d --graph_size 20 --catalog_size 10 --demand_size 100 --query_nodes 2  --bandwidth_coefficient 0.75 --stepsize 50
-#
-#sbatch ../script.sh plotter.py --graph_type grid_2d --graph_size 20 --catalog_size 10 --demand_size 100 --query_nodes 2  --bandwidth_coefficient 0.8 --stepsize 10
-
-
-#for type in 1 2 3
-#  do
-#  for bandwidth in 1 1.5 2 2.5 3
-#  do
-#    for graph in grid_2d erdos_renyi hypercube balanced_tree small_world
-#    do
-#      for stepsize in 50 100 500
-#      do
-#        sbatch ../script.sh plotter.py --graph_type $graph --bandwidth_coefficient $bandwidth --stepsize $stepsize --bandwidth_type $type
-#      done
-#    done
-#    for graph in geant dtelekom
-#    do
-#      for stepsize in 10 50 100
-#      do
-#        sbatch ../script.sh plotter.pyZ --graph_type $graph --bandwidth_coefficient $bandwidth --stepsize $stepsize --query_nodes 4 --bandwidth_type $type
-#      done
-#    done
-#  done
-#done
-
-
-#for graph in example1 example2
-for graph in abilene2
-do
-  for stepsize in 10 50 100
+for type in 1 2 3
   do
-    sbatch ../script.sh plotter.py --graph_type $graph --stepsize $stepsize --query_nodes 4
+  for bandwidth in 1 1.5 2 2.5 3
+  do
+    for graph in grid_2d erdos_renyi hypercube balanced_tree small_world
+    do
+      for stepsize in 100 #50 500
+      do
+        sbatch ../script.sh plotter.py --graph_type $graph --bandwidth_coefficient $bandwidth --stepsize $stepsize --bandwidth_type $type
+      done
+    done
+    for graph in geant dtelekom example1 example2 abilene1 abilene2 real1 real2
+    do
+      for stepsize in 100 #10 50
+      do
+        sbatch ../script.sh plotter.py --graph_type $graph --bandwidth_coefficient $bandwidth --stepsize $stepsize --query_nodes 4 --bandwidth_type $type
+      done
+    done
   done
 done
-# --graph_type grid_2d --graph_size 20 --catalog_size 10 --demand_size 100 --query_nodes 2  --bandwidth_coefficient 0.7 --stepsize 10 --max_capacity 1
