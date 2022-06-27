@@ -9,10 +9,10 @@ if __name__ == "__main__":
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument('--graph_type', default="erdos_renyi", type=str, help='Graph type',
-                        choices=['erdos_renyi', 'balanced_tree', 'hypercube', "cicular_ladder", "cycle",
-                                 "grid_2d", 'lollipop', 'expander', 'hypercube', 'star', 'barabasi_albert',
-                                 'watts_strogatz', 'regular', 'powerlaw_tree', 'small_world', 'geant',
-                                 'abilene', 'dtelekom', 'servicenetwork', 'example1', 'example2', 'abilene2'])
+                        choices=['erdos_renyi', 'balanced_tree', 'hypercube', "cicular_ladder", "cycle", "grid_2d",
+                                 'lollipop', 'expander', 'star', 'barabasi_albert', 'watts_strogatz',
+                                 'regular', 'powerlaw_tree', 'small_world', 'geant', 'abilene', 'dtelekom',
+                                 'servicenetwork', 'example1', 'example2', 'abilene1', 'abilene2', 'real1', 'real2'])
     parser.add_argument('--catalog_size', default=100, type=int, help='Catalog size')
     parser.add_argument('--graph_size', default=100, type=int, help='Network size')
     parser.add_argument('--query_nodes', default=10, type=int, help='Number of nodes generating queries')
@@ -30,11 +30,7 @@ if __name__ == "__main__":
 
     args.debug_level = eval("logging." + args.debug_level)
     logging.basicConfig(level=args.debug_level)
-    # if args.bandwidth_type == 1:
-    #     dir = "OUTPUT6/"
-    # else:
-    #     dir = "OUTPUT%d/" % (args.bandwidth_type+6)
-    dir = "OUTPUT%d/" % (args.bandwidth_type + 9)
+    dir = "OUTPUT%d/" % (args.bandwidth_type)
     fname = dir + "%s_%ditems_%dnodes_%dquerynodes_%ddemands_%dcapcity_%fbandwidth_%dstepsize" % (
         args.graph_type, args.catalog_size, args.graph_size, args.query_nodes, args.demand_size, args.max_capacity,
         args.bandwidth_coefficient, args.stepsize)
@@ -104,14 +100,15 @@ if __name__ == "__main__":
     ax[1].legend(loc='upper center', bbox_to_anchor=(0.5, 1.1), fontsize=13)
 
     plt.tick_params(labelsize=10)
-    ax[0].set_ylabel('Cache Gain', fontsize=15)
+    ax[0].set_ylabel('Cache Gain $F$', fontsize=15)
     ax[0].set_xlabel('Iterations', fontsize=15)
-    ax[1].set_ylabel('Overflow', fontsize=15)
+    ax[1].set_ylabel('Infeasibility $InF$', fontsize=15)
     ax[1].set_xlabel('Iterations', fontsize=15)
     plt.tight_layout()
     ax[0].ticklabel_format(axis='y', style='sci', scilimits=(0, 0))
-    ax[0].ticklabel_format(axis='y', style='sci', scilimits=(0, 0))
-
+    ax[1].ticklabel_format(axis='y', style='sci', scilimits=(0, 0))
+    # ax[0].set_yscale("log")
+    # ax[1].set_yscale("log")
     plt.show()
     logging.info('Plot ' + fname)
 

@@ -5,9 +5,9 @@ import numpy as np
 
 bandwidth_coefficients = [1, 1.5, 2, 2.5, 3]
 algorithm = ['PrimalDual', 'Greedy1', 'Greedy2', 'Random1', 'Random2', 'Heuristic']
-Dirs = {1: ["OUTPUT10/", "Greedy1/CacheRoute/", "Greedy1/RouteCache/", "Random1/CacheRoute/", "Random1/RouteCache/", "Heuristic1/"],
-        2: ["OUTPUT11/", "Greedy2/CacheRoute/", "Greedy2/RouteCache/", "Random2/CacheRoute/", "Random2/RouteCache/", "Heuristic2/"],
-        3: ["OUTPUT12/", "Greedy3/CacheRoute/", "Greedy3/RouteCache/", "Random3/CacheRoute/", "Random3/RouteCache/", "Heuristic3/"]}
+Dirs = {1: ["OUTPUT1/", "Greedy1/CacheRoute/", "Greedy1/RouteCache/", "Random1/CacheRoute/", "Random1/RouteCache/", "Heuristic1/"],
+        2: ["OUTPUT2/", "Greedy2/CacheRoute/", "Greedy2/RouteCache/", "Random2/CacheRoute/", "Random2/RouteCache/", "Heuristic2/"],
+        3: ["OUTPUT3/", "Greedy3/CacheRoute/", "Greedy3/RouteCache/", "Random3/CacheRoute/", "Random3/RouteCache/", "Heuristic3/"]}
 
 colors = ['r', 'sandybrown', 'gold', 'darkseagreen', 'c', 'dodgerblue', 'm']
 line_styles = ['s-', '*-', 'd--', '^-', 'v-', '.:']
@@ -31,8 +31,8 @@ def plotSensitivity(x, type, graph):
             j = len(x[alg])
         ax.plot(bandwidth_coefficients[j:], x[alg][j:], line_styles[i], markersize=10, color=colors[i], label=alg, linewidth=3)
     ax.tick_params(labelsize=10)
-    ax.set_ylabel('Cache Gain', fontsize=15)
-    ax.set_xlabel('Looseness', fontsize=15)
+    ax.set_ylabel('Cache Gain $F$', fontsize=15)
+    ax.set_xlabel('Looseness $\kappa$', fontsize=15)
 
     lgd = fig.legend(fontsize=13, loc='upper left', bbox_to_anchor=(0.95, 0.9))
     plt.ticklabel_format(axis='y', style='sci', scilimits=(0, 0))
@@ -46,10 +46,10 @@ if __name__ == '__main__':
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument('--graph_type', default="erdos_renyi", type=str, help='Graph type',
-                        choices=['erdos_renyi', 'balanced_tree', 'hypercube', "cicular_ladder", "cycle",
-                                 "grid_2d", 'lollipop', 'expander', 'hypercube', 'star', 'barabasi_albert',
-                                 'watts_strogatz', 'regular', 'powerlaw_tree', 'small_world', 'geant',
-                                 'abilene', 'dtelekom', 'servicenetwork', 'example1', 'example2', 'abilene2', 'real'])
+                        choices=['erdos_renyi', 'balanced_tree', 'hypercube', "cicular_ladder", "cycle", "grid_2d",
+                                 'lollipop', 'expander', 'star', 'barabasi_albert', 'watts_strogatz',
+                                 'regular', 'powerlaw_tree', 'small_world', 'geant', 'abilene', 'dtelekom',
+                                 'servicenetwork', 'example1', 'example2', 'abilene1', 'abilene2', 'real1', 'real2'])
     parser.add_argument('--catalog_size', default=100, type=int, help='Catalog size')
     parser.add_argument('--graph_size', default=100, type=int, help='Network size')
     parser.add_argument('--query_nodes', default=10, type=int, help='Number of nodes generating queries')
