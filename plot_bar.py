@@ -7,13 +7,13 @@ topology_small_map = {'geant': 'geant', 'dtelekom': 'dtelekom', 'abilene1': 'abi
                       'example1': 'example1', 'example2': 'example2', 'real1': 'KS1', 'real2': 'KS2'}
 
 
-algorithm = ['PrimalDual', 'Random1', 'Random2', 'Greedy1', 'Greedy2', 'Heuristic']
+algorithm = ['PrimalDual', 'Random1', 'Random2', 'Greedy1', 'Greedy2', 'Alternating']
 Dirs = {1: ["OUTPUT1/", "Random1/CacheRoute/", "Random1/RouteCache/", "Greedy1/CacheRoute/", "Greedy1/RouteCache/", "Heuristic1/"],
         2: ["OUTPUT2/", "Random2/CacheRoute/", "Random2/RouteCache/", "Greedy2/CacheRoute/", "Greedy2/RouteCache/", "Heuristic2/"],
         3: ["OUTPUT3/", "Random3/CacheRoute/", "Random3/RouteCache/", "Greedy3/CacheRoute/", "Greedy3/RouteCache/", "Heuristic3/"]}
 
 colors = ['r', 'sandybrown', 'gold', 'darkseagreen', 'c', 'dodgerblue', 'm']
-hatches = ['/', '\\\\', '|', '+', '--', '', '////',  'x', 'o', '.', '\\']
+hatches = ['/', '\\\\', '|', 'o', '--', '', '////',  'x', '+', '.', '\\']
 
 
 def readresult(fname):
@@ -32,7 +32,7 @@ def saveviolation(x, type, bandwidth_coefficient):
 
 def barplot(x1, x2, type, bandwidth_coefficient):
     fig, ax = plt.subplots(nrows=2, ncols=1)
-    fig.set_size_inches(18, 6)
+    fig.set_size_inches(18, 5.5)
     N = len(topology_map) + len(topology_small_map)
     numb_bars = len(algorithm)+1
     ind = np.arange(0,numb_bars*N ,numb_bars)
@@ -150,7 +150,10 @@ if __name__ == '__main__':
             compare = 0
             for i in range(len(objs)):
                 if vios[i] == vio_min:
-                    compare = max(compare, objs[i])
+                    # compare = max(compare, objs[i])
+                    if objs[i] > compare:
+                        compare = objs[i]
+                        print(i)
             obj[algorithm[0]][topology_map[top]] = compare / compare
             violation[algorithm[0]][topology_map[top]] = vio_min
 
