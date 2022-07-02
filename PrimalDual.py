@@ -105,8 +105,8 @@ class PrimalDual:
             X, R = self.FW.alg(iterations=100, Dual=self.Dual, dependencies=dependencies)
 
             # smooth result
-            # smooth = 2 / (i + 2)
-            smooth = 1
+            smooth = 2 / (i + 2)
+            # smooth = 1
             self.adapt(X, self.X, smooth)
             self.adapt(R, self.R, smooth)
 
@@ -154,7 +154,7 @@ if __name__ == '__main__':
     logging.info('Read data from ' + input)
     PD = PrimalDual(P)
     result = PD.alg(args.iterations, args.stepsize)
-    dir = "OUTPUT%d/" % (args.bandwidth_type + 3)
+    dir = "OUTPUT%d/" % (args.bandwidth_type)
 
     if not os.path.exists(dir):
         os.mkdir(dir)

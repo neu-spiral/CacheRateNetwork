@@ -30,7 +30,7 @@ if __name__ == "__main__":
 
     args.debug_level = eval("logging." + args.debug_level)
     logging.basicConfig(level=args.debug_level)
-    dir = "OUTPUT%d/" % (args.bandwidth_type)
+    dir = "OUTPUT%d/" % (args.bandwidth_type + 3)
     fname = dir + "%s_%ditems_%dnodes_%dquerynodes_%ddemands_%dcapcity_%fbandwidth_%dstepsize" % (
         args.graph_type, args.catalog_size, args.graph_size, args.query_nodes, args.demand_size, args.max_capacity,
         args.bandwidth_coefficient, args.stepsize)
@@ -90,19 +90,16 @@ if __name__ == "__main__":
 
     fig, ax = plt.subplots(nrows=2, ncols=1)
     fig.set_size_inches(5, 7)
-    ax[0].plot(iterations, lagrangians, label='L')
-    ax[0].plot(iterations, objs, '-.', label='Obj')
+    ax[0].plot(iterations, lagrangians, label='Lagragian $L$')
+    ax[0].plot(iterations, objs, '-.', label='Cache Gain $F$')
     ax[0].legend(loc='upper center', bbox_to_anchor=(0.5, 1.1), fontsize=13)
     violations = np.array(SumFlows) / np.array(NumNonzeroFlows)
-    violations_max = np.array(MaxFlows) / np.array(NumNonzeroFlows)
-    ax[1].plot(iterations, violations, label='SumOverflow')
-    ax[1].plot(iterations, violations_max, '-.', label='MaxOverflow')
+    ax[1].plot(iterations, violations, label='Infeasibility $InF$')
+    ax[1].plot(iterations, MaxFlows, '-.', label='Max Infeasibility $MaxInF$')
     ax[1].legend(loc='upper center', bbox_to_anchor=(0.5, 1.1), fontsize=13)
 
     plt.tick_params(labelsize=10)
-    ax[0].set_ylabel('Cache Gain $F$', fontsize=15)
     ax[0].set_xlabel('Iterations', fontsize=15)
-    ax[1].set_ylabel('Infeasibility $InF$', fontsize=15)
     ax[1].set_xlabel('Iterations', fontsize=15)
     plt.tight_layout()
     ax[0].ticklabel_format(axis='y', style='sci', scilimits=(0, 0))

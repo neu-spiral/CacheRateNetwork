@@ -4,10 +4,10 @@ import pickle
 import numpy as np
 
 bandwidth_coefficients = [1, 1.5, 2, 2.5, 3]
-algorithm = ['PrimalDual', 'Greedy1', 'Greedy2', 'Random1', 'Random2', 'Heuristic']
-Dirs = {1: ["OUTPUT1/", "Greedy1/CacheRoute/", "Greedy1/RouteCache/", "Random1/CacheRoute/", "Random1/RouteCache/", "Heuristic1/"],
-        2: ["OUTPUT2/", "Greedy2/CacheRoute/", "Greedy2/RouteCache/", "Random2/CacheRoute/", "Random2/RouteCache/", "Heuristic2/"],
-        3: ["OUTPUT3/", "Greedy3/CacheRoute/", "Greedy3/RouteCache/", "Random3/CacheRoute/", "Random3/RouteCache/", "Heuristic3/"]}
+algorithm = ['PrimalDual', 'Random1', 'Random2', 'Greedy1', 'Greedy2', 'Alternating']
+Dirs = {1: ["OUTPUT1/", "Random1/CacheRoute/", "Random1/RouteCache/", "Greedy1/CacheRoute/", "Greedy1/RouteCache/", "Heuristic1/"],
+        2: ["OUTPUT2/", "Random2/CacheRoute/", "Random2/RouteCache/", "Greedy2/CacheRoute/", "Greedy2/RouteCache/", "Heuristic2/"],
+        3: ["OUTPUT3/", "Random3/CacheRoute/", "Random3/RouteCache/", "Greedy3/CacheRoute/", "Greedy3/RouteCache/", "Heuristic3/"]}
 
 colors = ['r', 'sandybrown', 'gold', 'darkseagreen', 'c', 'dodgerblue', 'm']
 line_styles = ['s-', '*-', 'd--', '^-', 'v-', '.:']

@@ -365,7 +365,7 @@ def main():
         for (x, y) in temp_graph.edges():
             xx = number_map[x]
             yy = number_map[y]
-            bandwidths[(xx, yy)] = bandwidths_real[(x, y)] * args.bandwidth_coefficient / rate_max / 30 * args.bandwidth_coefficient
+            bandwidths[(xx, yy)] = bandwidths_real[(x, y)] * args.bandwidth_coefficient / rate_max / 30
             bandwidths[(yy, xx)] = bandwidths[(xx, yy)]
     else:
         '''Random Cache'''
