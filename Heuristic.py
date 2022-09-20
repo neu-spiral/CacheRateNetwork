@@ -38,16 +38,30 @@ class Heuristic:
                 R[d][p] = 0
 
         for t in range(iterations):
+            time1 = time.time()
             X = self.FW.alg(iterations=100, dependencies=dependencies, R=R)
             R = self.route.OptimalRoute(X)
+            time2 = time.time()
+            duration = time2 - time1
             if R:
                 obj = self.route.obj(X, R)
-                flow, overflow = overflows(X, R, self.demands, self.bandwidths)
-                logging.info((t, obj))
-                result.append((X, R, overflow, obj))
+                flow, overflow, violation = overflows(X, R, self.demands, self.bandwidths)
+                logging.info((t, duration, obj))
+                result.append((t, duration, X, R, violation, obj))
+                num_nonzero_flows = 0
+                Infeasibility = 0
+                for e in flow:
+                    if flow[e] > 0:
+                        num_nonzero_flows += 1
+                    if violation[e] > 0:
+                        Infeasibility += violation[e]
+                Infeasibility /= num_nonzero_flows
+                if len(result) > 1:
+                    if Infeasibility < 0.001 and abs(obj - result[-2][-1]) / obj < 0.001:
+                        break
             else:
                 logging.info('infeasible')
-                result.append((X, R, 0))
+                result.append((t, duration, X, R, 0))
                 break
         return result
 
@@ -62,11 +76,11 @@ if __name__ == '__main__':
                                  'lollipop', 'expander', 'star', 'barabasi_albert', 'watts_strogatz',
                                  'regular', 'powerlaw_tree', 'small_world', 'geant', 'abilene', 'dtelekom',
                                  'servicenetwork', 'example1', 'example2', 'abilene1', 'abilene2', 'real1', 'real2'])
-    parser.add_argument('--catalog_size', default=100, type=int, help='Catalog size')
+    parser.add_argument('--catalog_size', default=1000, type=int, help='Catalog size')
     parser.add_argument('--graph_size', default=100, type=int, help='Network size')
     parser.add_argument('--query_nodes', default=10, type=int, help='Number of nodes generating queries')
-    parser.add_argument('--demand_size', default=1000, type=int, help='Demand size')
-    parser.add_argument('--max_capacity', default=5, type=int, help='Maximum capacity per cache')
+    parser.add_argument('--demand_size', default=5000, type=int, help='Demand size')
+    parser.add_argument('--max_capacity', default=20, type=int, help='Maximum capacity per cache')
     parser.add_argument('--bandwidth_coefficient', default=1, type=float,
                         help='Coefficient of bandwidth for max flow, this coefficient should be between [1, max_paths]')
     parser.add_argument('--bandwidth_type', default=1, type=int,

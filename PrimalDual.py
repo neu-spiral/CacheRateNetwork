@@ -38,10 +38,10 @@ class PrimalDual:
 
     def DualStep(self, X, R, stepsize):
         # calculate flow over each edge
-        flow, violation = overflows(X, R, self.demands, self.bandwidths)
-        overflow = {}
+        flow, overflow, violation = overflows(X, R, self.demands, self.bandwidths)
+        num_nonzero_flows = 0
+        Infeasibility = 0
         for e in flow:
-            overflow[e] = flow[e] - self.bandwidths[e]
             # if overflow[e] < 0:
             #     overflow[e] = 0
             # self.Dual[e] += stepsize * overflow[e]
@@ -49,7 +49,12 @@ class PrimalDual:
             # print(flow[e], self.bandwidths[e])
             if self.Dual[e] < 0:
                 self.Dual[e] = 0
-        return violation
+            if flow[e] > 0:
+                num_nonzero_flows += 1
+            if violation[e] > 0:
+                Infeasibility += violation[e]
+        Infeasibility /= num_nonzero_flows
+        return violation, Infeasibility
 
     # def DualStep_momentum(self, X, R, stepsize):
     #     # calculate flow over each edge
@@ -91,7 +96,7 @@ class PrimalDual:
     #     return overflow
 
     def adapt(self, X_new, X_old, smooth):
-        '''Adapt solution combined with old solution'''
+        """Adapt solution combined with old solution"""
         for v in X_new:
             for i in X_new[v]:
                 X_new[v][i] = smooth * X_new[v][i] + (1 - smooth) * X_old[v][i]
@@ -102,19 +107,25 @@ class PrimalDual:
         result = []
         dependencies = Dependencies(self.demands)
         for i in range(iterations):
+            time1 = time.time()
             X, R = self.FW.alg(iterations=100, Dual=self.Dual, dependencies=dependencies)
 
             # smooth result
-            smooth = 2 / (i + 2)
-            # smooth = 1
+            # smooth = 2 / (i + 2)
+            smooth = 1
             self.adapt(X, self.X, smooth)
             self.adapt(R, self.R, smooth)
 
-            overflow = self.DualStep(X, R, stepsize / (i+1)**0.5)
-
+            overflow, Infeasibility = self.DualStep(X, R, stepsize / (i+1)**0.5)
+            time2 = time.time()
             lagrangian, obj = self.FW.obj(X, R, self.Dual)
-            logging.info(pp([i, sum(self.Dual.values()), sum(overflow.values()), lagrangian]))
-            result.append((i, X, R, overflow, copy.deepcopy(self.Dual), lagrangian, obj))
+            duration = time2 - time1
+            logging.info(pp([i, duration, Infeasibility, lagrangian]))
+            result.append((i, duration, X, R, overflow, copy.deepcopy(self.Dual), lagrangian, obj))
+            # convergence
+            if len(result) > 1:
+                if Infeasibility < 0.001 and abs(obj - result[-2][-1]) / obj < 0.001:
+                    break
         return result
 
 
@@ -128,11 +139,11 @@ if __name__ == '__main__':
                                  'lollipop', 'expander', 'star', 'barabasi_albert', 'watts_strogatz',
                                  'regular', 'powerlaw_tree', 'small_world', 'geant', 'abilene', 'dtelekom',
                                  'servicenetwork', 'example1', 'example2', 'abilene1', 'abilene2', 'real1', 'real2'])
-    parser.add_argument('--catalog_size', default=100, type=int, help='Catalog size')
+    parser.add_argument('--catalog_size', default=1000, type=int, help='Catalog size')
     parser.add_argument('--graph_size', default=100, type=int, help='Network size')
     parser.add_argument('--query_nodes', default=10, type=int, help='Number of nodes generating queries')
-    parser.add_argument('--demand_size', default=1000, type=int, help='Demand size')
-    parser.add_argument('--max_capacity', default=5, type=int, help='Maximum capacity per cache')
+    parser.add_argument('--demand_size', default=5000, type=int, help='Demand size')
+    parser.add_argument('--max_capacity', default=20, type=int, help='Maximum capacity per cache')
     parser.add_argument('--bandwidth_coefficient', default=1, type=float,
                         help='Coefficient of bandwidth for max flow, this coefficient should be between (1, max_paths)')
     parser.add_argument('--bandwidth_type', default=1, type=int,
@@ -154,7 +165,7 @@ if __name__ == '__main__':
     logging.info('Read data from ' + input)
     PD = PrimalDual(P)
     result = PD.alg(args.iterations, args.stepsize)
-    dir = "OUTPUT%d/" % (args.bandwidth_type)
+    dir = "OUTPUT%d/" % (args.bandwidth_type + 3)
 
     if not os.path.exists(dir):
         os.mkdir(dir)

@@ -1,6 +1,6 @@
 from ProbGenerate import Problem, Demand
 from Route import OptimalRouting
-import logging, argparse, pickle, os
+import logging, argparse, pickle, os, time
 from helpers import succFun, Dependencies, overflows
 import cvxpy as cp
 
@@ -91,12 +91,12 @@ class CacheRoute(Greedy):
 
         if R:
             obj = self.obj(X, R)
-            flow, overflow = overflows(X, R, self.demands, self.bandwidths)
+            flow, overflow, violation = overflows(X, R, self.demands, self.bandwidths)
             print('CacheRoute', obj)
-            return (X, R, overflow, obj)
+            return [X, R, violation, obj]
         else:
             print('CacheRoute: infeasible')
-            return (X, R, 0)
+            return [X, R, 0]
 
 
 class RouteCache(Greedy):
@@ -114,12 +114,12 @@ class RouteCache(Greedy):
         if R:
             X = self.GreedyCache(R, dependencies)
             obj = self.obj(X, R)
-            flow, overflow = overflows(X, R, self.demands, self.bandwidths)
+            flow, overflow, violation = overflows(X, R, self.demands, self.bandwidths)
             print('RouteCache', obj)
-            return (X, R, overflow, obj)
+            return [X, R, violation, obj]
         else:
             print('RouteCache: infeasible')
-            return (X, R, 0)
+            return [X, R, 0]
 
 
 if __name__ == '__main__':
@@ -132,11 +132,11 @@ if __name__ == '__main__':
                                  'lollipop', 'expander', 'star', 'barabasi_albert', 'watts_strogatz',
                                  'regular', 'powerlaw_tree', 'small_world', 'geant', 'abilene', 'dtelekom',
                                  'servicenetwork', 'example1', 'example2', 'abilene1', 'abilene2', 'real1', 'real2'])
-    parser.add_argument('--catalog_size', default=100, type=int, help='Catalog size')
+    parser.add_argument('--catalog_size', default=1000, type=int, help='Catalog size')
     parser.add_argument('--graph_size', default=100, type=int, help='Network size')
     parser.add_argument('--query_nodes', default=10, type=int, help='Number of nodes generating queries')
-    parser.add_argument('--demand_size', default=1000, type=int, help='Demand size')
-    parser.add_argument('--max_capacity', default=5, type=int, help='Maximum capacity per cache')
+    parser.add_argument('--demand_size', default=5000, type=int, help='Demand size')
+    parser.add_argument('--max_capacity', default=20, type=int, help='Maximum capacity per cache')
     parser.add_argument('--bandwidth_coefficient', default=1, type=float,
                         help='Coefficient of bandwidth for max flow, this coefficient should be between (1, max_paths)')
     parser.add_argument('--bandwidth_type', default=1, type=int,
@@ -156,7 +156,11 @@ if __name__ == '__main__':
     logging.info('Read data from ' + input)
 
     CR = CacheRoute(P)
+    time1 = time.time()
     result = CR.alg()
+    time2 = time.time()
+    duration = [time2-time1]
+    result = duration + result
     dir = "Greedy%d/CacheRoute/" % (args.bandwidth_type)
     if not os.path.exists(dir):
         os.makedirs(dir)
@@ -168,7 +172,11 @@ if __name__ == '__main__':
         pickle.dump(result, f)
 
     RC = RouteCache(P)
+    time1 = time.time()
     result = RC.alg()
+    time2 = time.time()
+    duration = [time2-time1]
+    result = duration + result
     dir = "Greedy%d/RouteCache/" % (args.bandwidth_type)
     if not os.path.exists(dir):
         os.makedirs(dir)

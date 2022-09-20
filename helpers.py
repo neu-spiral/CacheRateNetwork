@@ -208,10 +208,11 @@ def Dependencies(demands):
 
 def overflows(X, R, demands, bandwidths):
     """
-    calculate flow and violation over each edge
+    calculate flow, overflow and violation = overflow/bandwidth over each edge
     """
     flow = {}
     violation = {}
+    overflow = {}
     for d in R:
         item = demands[d].item
         rate = demands[d].rate
@@ -234,9 +235,9 @@ def overflows(X, R, demands, bandwidths):
                 prodsofar *= (1 - X[x][item])
 
     for e in flow:
-        violation[e] = flow[e] - bandwidths[e]
-        violation[e] /= bandwidths[e]
-    return flow, violation
+        overflow[e] = flow[e] - bandwidths[e]
+        violation[e] = overflow[e] / bandwidths[e]
+    return flow, overflow, violation
 
 
 if __name__ == "__main__":

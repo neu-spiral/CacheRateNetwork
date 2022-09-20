@@ -60,8 +60,8 @@ def main():
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     # parser.add_argument('inputfile',help = 'Training data. This should be a tab separated file of the form: index _tab_ features _tab_ output , where index is a number, features is a json string storing the features, and output is a json string storing output (binary) variables. See data/LR-example.txt for an example.')
     parser.add_argument('outputfile', help='Output file')
-    parser.add_argument('--max_capacity', default=5, type=int, help='Maximum capacity per cache')
-    parser.add_argument('--min_capacity', default=1, type=int, help='Minimum capacity per cache')
+    parser.add_argument('--max_capacity', default=20, type=int, help='Maximum capacity per cache')
+    parser.add_argument('--min_capacity', default=10, type=int, help='Minimum capacity per cache')
     parser.add_argument('--bandwidth_coefficient', default=1, type=float,
                         help='Coefficient of bandwidth for max flow, this coefficient should be between (1, max_paths)')
     parser.add_argument('--bandwidth_type', default=1, type=int,
@@ -71,9 +71,9 @@ def main():
     parser.add_argument('--rate', default=1.0, type=float, help='Average rate per demand')
     parser.add_argument('--max_paths', default=5, type=int, help='Maximum number of paths per demand')
     parser.add_argument('--path_stretch', default=4.0, type=float, help='Allowed stretch from shortest path')
-    parser.add_argument('--catalog_size', default=100, type=int, help='Catalog size')
+    parser.add_argument('--catalog_size', default=1000, type=int, help='Catalog size')
     #   parser.add_argument('--sources_per_item',default=1,type=int, help='Number of designated sources per catalog item')
-    parser.add_argument('--demand_size', default=1000, type=int, help='Demand size')
+    parser.add_argument('--demand_size', default=5000, type=int, help='Demand size')
     parser.add_argument('--demand_distribution', default="powerlaw", type=str, help='Demand distribution',
                         choices=['powerlaw', 'uniform'])
     parser.add_argument('--powerlaw_exp', default=1.2, type=float,
@@ -390,7 +390,7 @@ def main():
                 for i in X[v]:
                     X[v][i] = min(cache_average, 1)
             elif args.bandwidth_type == 3:
-                sampled_items = random.sample(list(X.keys()), min(capacities[v], item_total))
+                sampled_items = random.sample(list(X[v].keys()), min(capacities[v], item_total))
                 for i in X[v]:
                     if i in sampled_items:
                         X[v][i] = 1
@@ -418,7 +418,7 @@ def main():
                     s = succFun(x, path)
         for e in bandwidths:
             if bandwidths[e] == 0:
-                bandwidths[e] = 0.001
+                bandwidths[e] = 0.00001
 
     logging.info('...done. Generated %d bandwidths' % len(bandwidths))
     logging.debug('Generated bandwidth:')
