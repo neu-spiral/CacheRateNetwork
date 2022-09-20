@@ -13,11 +13,11 @@ if __name__ == "__main__":
                                  'lollipop', 'expander', 'star', 'barabasi_albert', 'watts_strogatz',
                                  'regular', 'powerlaw_tree', 'small_world', 'geant', 'abilene', 'dtelekom',
                                  'servicenetwork', 'example1', 'example2', 'abilene1', 'abilene2', 'real1', 'real2'])
-    parser.add_argument('--catalog_size', default=100, type=int, help='Catalog size')
+    parser.add_argument('--catalog_size', default=1000, type=int, help='Catalog size')
     parser.add_argument('--graph_size', default=100, type=int, help='Network size')
     parser.add_argument('--query_nodes', default=10, type=int, help='Number of nodes generating queries')
-    parser.add_argument('--demand_size', default=1000, type=int, help='Demand size')
-    parser.add_argument('--max_capacity', default=5, type=int, help='Maximum capacity per cache')
+    parser.add_argument('--demand_size', default=5000, type=int, help='Demand size')
+    parser.add_argument('--max_capacity', default=20, type=int, help='Maximum capacity per cache')
     parser.add_argument('--bandwidth_coefficient', default=1, type=float,
                         help='Coefficient of bandwidth for max flow, this coefficient should be between (1, max_paths)')
     parser.add_argument('--bandwidth_type', default=1, type=int,
@@ -30,7 +30,7 @@ if __name__ == "__main__":
 
     args.debug_level = eval("logging." + args.debug_level)
     logging.basicConfig(level=args.debug_level)
-    dir = "OUTPUT%d/" % (args.bandwidth_type)
+    dir = "OUTPUT%d/" % (args.bandwidth_type + 3)
     fname = dir + "%s_%ditems_%dnodes_%dquerynodes_%ddemands_%dcapcity_%fbandwidth_%dstepsize" % (
         args.graph_type, args.catalog_size, args.graph_size, args.query_nodes, args.demand_size, args.max_capacity,
         args.bandwidth_coefficient, args.stepsize)
@@ -38,7 +38,7 @@ if __name__ == "__main__":
     with open(fname, 'rb') as f:
         results = pickle.load(f)
 
-    iterations, Xs, Rs, overflows, Duals, lagrangians, objs = zip(*results)
+    iterations, durations, Xs, Rs, overflows, Duals, lagrangians, objs = zip(*results)
     SumDuals = []
     for Dual in Duals:
         SumDual = sum(Dual.values())
@@ -69,24 +69,6 @@ if __name__ == "__main__":
             NumNonzeroFlows.append(len(Flow))
         else:
             NumNonzeroFlows.append(0)
-
-    # fig, ax = plt.subplots(nrows=4, ncols=1)
-    #
-    # ax[0].plot(iterations, SumDuals, label='SumDual')
-    # ax[0].legend()
-    # ax[1].plot(iterations, lagrangians, label='L')
-    # ax[1].plot(iterations, objs, label='Obj')
-    # ax[1].legend()
-    # ax[2].plot(iterations, SumFlows, label='SumOverflow')
-    # ax[2].plot(iterations, MaxFlows, label='MaxOverflow')
-    # if min(SumFlows) < 1:
-    #     ax[2].set_ylim([-0.05, 1])
-    # ax[2].legend()
-    # ax[3].plot(iterations, NumActiveFlows, label='NumActiveflow')
-    # ax[3].plot(iterations, NumNonzeroFlows, label='NumNonzeroFlows')
-    #
-    # ax[3].set_title(str(len(overflow)))
-    # ax[3].legend()
 
     fig, ax = plt.subplots(nrows=2, ncols=1)
     fig.set_size_inches(5, 7)

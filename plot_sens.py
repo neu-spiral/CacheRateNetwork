@@ -50,16 +50,16 @@ if __name__ == '__main__':
                                  'lollipop', 'expander', 'star', 'barabasi_albert', 'watts_strogatz',
                                  'regular', 'powerlaw_tree', 'small_world', 'geant', 'abilene', 'dtelekom',
                                  'servicenetwork', 'example1', 'example2', 'abilene1', 'abilene2', 'real1', 'real2'])
-    parser.add_argument('--catalog_size', default=100, type=int, help='Catalog size')
+    parser.add_argument('--catalog_size', default=1000, type=int, help='Catalog size')
     parser.add_argument('--graph_size', default=100, type=int, help='Network size')
     parser.add_argument('--query_nodes', default=10, type=int, help='Number of nodes generating queries')
-    parser.add_argument('--demand_size', default=1000, type=int, help='Demand size')
-    parser.add_argument('--max_capacity', default=5, type=int, help='Maximum capacity per cache')
+    parser.add_argument('--demand_size', default=5000, type=int, help='Demand size')
+    parser.add_argument('--max_capacity', default=20, type=int, help='Maximum capacity per cache')
     parser.add_argument('--bandwidth_type', default=1, type=int,
                         help='Type of generating bandwidth: 1. no cache, 2. uniform cache, 3. random integer cache')
     parser.add_argument('--debug_level', default='INFO', type=str, help='Debug Level',
                         choices=['INFO', 'DEBUG', 'WARNING', 'ERROR'])
-    parser.add_argument('--stepsize', default=100, type=int, help='Stepsize')
+    parser.add_argument('--stepsize', default=1000, type=int, help='Stepsize')
 
     args = parser.parse_args()
 
@@ -72,44 +72,50 @@ if __name__ == '__main__':
     Dir = Dirs[args.bandwidth_type]
 
     for bandwidth_coefficient in bandwidth_coefficients:
-        fname1 = "%s_%ditems_%dnodes_%dquerynodes_%ddemands_%dcapcity_%fbandwidth_%dstepsize" % (
-            args.graph_type, args.catalog_size, args.graph_size, args.query_nodes, args.demand_size, args.max_capacity,
-            bandwidth_coefficient, args.stepsize)
+
         fname2 = "%s_%ditems_%dnodes_%dquerynodes_%ddemands_%dcapcity_%fbandwidth" % (
             args.graph_type, args.catalog_size, args.graph_size, args.query_nodes, args.demand_size, args.max_capacity,
             bandwidth_coefficient)
 
-        fname = Dir[0] + fname1
-        result = readresult(fname)
-
-        '''calculate violation'''
-        SumFlows = []
-        NumNonzeroFlows = []
-        iterations, Xs, Rs, overflows, Duals, lagrangians, objs = zip(*result)
-        for overflow in overflows:
-            ActiveFlow = []
-            Flow = []
-            for e in overflow:
-                if overflow[e] > 0:  # violated flow
-                    ActiveFlow.append(overflow[e])
-                if overflow[e] > -1:  # non zero flow
-                    Flow.append(overflow[e])
-            if ActiveFlow:
-                SumFlows.append(sum(ActiveFlow))
-            else:
-                SumFlows.append(0)
-            if Flow:
-                NumNonzeroFlows.append(len(Flow))
-            else:
-                NumNonzeroFlows.append(0)
-        vios = np.array(SumFlows) / np.array(NumNonzeroFlows)
-        vio_min = min(vios)
-
-        '''obj'''
         result = 0
-        for i in range(len(objs)):
-            if vios[i] == vio_min:
-                result = max(result, objs[i])
+        vio = 1000000
+        for stepsize in [100, 500, 1000, 5000, 10000]:
+            fname1 = "%s_%ditems_%dnodes_%dquerynodes_%ddemands_%dcapcity_%fbandwidth_%dstepsize" % (
+                args.graph_type, args.catalog_size, args.graph_size, args.query_nodes, args.demand_size, args.max_capacity,
+                bandwidth_coefficient, stepsize)
+            fname = Dir[0] + fname1
+            results = readresult(fname)
+
+            '''calculate violation'''
+            SumFlows = []
+            NumNonzeroFlows = []
+            iterations, durations, Xs, Rs, overflows, Duals, lagrangians, objs = zip(*results)
+            for overflow in overflows:
+                ActiveFlow = []
+                Flow = []
+                for e in overflow:
+                    if overflow[e] > 0:  # violated flow
+                        ActiveFlow.append(overflow[e])
+                    if overflow[e] > -1:  # non zero flow
+                        Flow.append(overflow[e])
+                if ActiveFlow:
+                    SumFlows.append(sum(ActiveFlow))
+                else:
+                    SumFlows.append(0)
+                if Flow:
+                    NumNonzeroFlows.append(len(Flow))
+                else:
+                    NumNonzeroFlows.append(0)
+            vios = np.array(SumFlows) / np.array(NumNonzeroFlows)
+            vio_min = min(vios)
+
+            '''obj'''
+            for i in range(len(objs)):
+                if vios[i] == vio_min:
+                    if (objs[i] >= 0.999 * result and vio_min < vio) or (objs[i] > result and vio_min <= 1.001 * vio):
+                        result = objs[i]
+                        vio = vio_min
+
         obj[algorithm[0]].append(result)
 
         for i in range(1, len(algorithm)-1):
